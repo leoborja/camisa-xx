@@ -136,6 +136,7 @@ export async function render(root, { store, params, ehAtual }) {
           <label class="campo"><span>Status</span><select name="status">${opcoes(STATUS, c.status || 'estoque', '—').replace('<option value="">—</option>', '')}</select></label>
           ${campoDinheiro('preco_pedido', 'Preço pedido', c.preco_pedido)}
         </div>
+        <label class="alternar na-loja"><input type="checkbox" name="publicada" ${(c.publicada ?? !editando) ? 'checked' : ''}><span>Mostrar na loja</span></label>
         <div id="bloco-vendida" ${c.status === 'vendida' ? '' : 'hidden'}>
           <div class="duas">
             ${campoDinheiro('valor_venda', 'Vendida por', c.valor_venda)}
@@ -225,6 +226,7 @@ export async function render(root, { store, params, ehAtual }) {
     for (const k of ESCOLHA) d[k] = (fd.get(k) || '').toString() || null;
     for (const k of DINHEIRO) d[k] = lerBRL(fd.get(k));
     d.certificado = fd.get('certificado') === 'on';
+    d.publicada = fd.get('publicada') === 'on';
     d.ano = anoDe(d.temporada);
     if (!d.status) d.status = 'estoque';
     return d;

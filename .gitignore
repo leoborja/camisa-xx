@@ -5,3 +5,5 @@ dist/
 .wrangler/
 ACESSO.local.md
 .dev.vars
+loja/public/icons/
+loja/.wrangler/

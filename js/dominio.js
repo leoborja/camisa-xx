@@ -76,3 +76,9 @@ export function subtitulo(c) {
   const jog = [c.jogador, c.numero_camisa && `#${c.numero_camisa}`].filter(Boolean).join(' ');
   return [rotulo(MODELOS, c.modelo), c.tamanho, jog].filter(Boolean).join(' · ');
 }
+
+// Endereço da camisa na loja pública: /camisa/12-flamengo-1981
+export function slugLoja(c) {
+  const base = `${c.clube || ''} ${c.temporada || ''}`.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  return `${c.numero}-${base.replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}`;
+}

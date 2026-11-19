@@ -1,6 +1,7 @@
 // Detalhe de uma camisa: galeria, preço/lucro, ficha completa, ações rápidas.
 import { esc, fmtBRL, fmtPct, fmtData, hojeISO, lerBRL, valorCampo, toast, acoes, confirmar, sheet } from '../ui.js';
-import { STATUS, TIPOS, MODELOS, CONSERVACAO, MANGAS, CANAIS, rotulo, custo, lucro, retorno, diasNoAcervo, titulo, subtitulo, numeroFmt } from '../dominio.js';
+import { STATUS, TIPOS, MODELOS, CONSERVACAO, MANGAS, CANAIS, rotulo, custo, lucro, retorno, diasNoAcervo, titulo, subtitulo, numeroFmt, slugLoja } from '../dominio.js';
+import { CONFIG } from '../config.js';
 import { ICONE, arteCamisa } from '../icones.js';
 
 export const tela = 'detalhe';
@@ -107,7 +108,10 @@ export async function render(root, { store, params, ehAtual }) {
       <div class="cabecalho-camisa">
         <h1>${esc(titulo(c))}</h1>
         <p class="sub">${esc(subtitulo(c))}</p>
-        <button class="selo grande" data-s="${c.status}" id="status">${esc(rotulo(STATUS, c.status))} <span class="seta">▾</span></button>
+        <div class="linha-selos">
+          <button class="selo grande" data-s="${c.status}" id="status">${esc(rotulo(STATUS, c.status))} <span class="seta">▾</span></button>
+          <span class="na-loja-tag ${c.publicada ? 'sim' : ''}">${c.publicada ? 'Na loja' : 'Fora da loja'}</span>
+        </div>
       </div>
 
       <section class="cartao">${blocoValores(c)}</section>
@@ -167,10 +171,25 @@ export async function render(root, { store, params, ehAtual }) {
 
   root.querySelector('#mais').addEventListener('click', async () => {
     const r = await acoes(titulo(c), [
+      ...(c.publicada
+        ? [{ valor: 'compartilhar', rotulo: 'Compartilhar link da loja' }, { valor: 'ver-loja', rotulo: 'Ver na loja' }, { valor: 'tirar-loja', rotulo: 'Tirar da loja' }]
+        : [{ valor: 'por-loja', rotulo: 'Mostrar na loja' }]),
       { valor: 'editar', rotulo: 'Editar' },
       { valor: 'duplicar', rotulo: 'Duplicar (camisa parecida)' },
       { valor: 'excluir', rotulo: 'Excluir camisa', perigo: true },
     ]);
+    const urlLoja = `${CONFIG.LOJA_URL}/camisa/${slugLoja(c)}`;
+    if (r === 'ver-loja') window.open(urlLoja, '_blank', 'noopener');
+    if (r === 'compartilhar') {
+      const dados = { title: titulo(c), text: `${titulo(c)}${c.preco_pedido != null && c.status !== 'vendida' ? ` · ${fmtBRL(c.preco_pedido)}` : ''}`, url: urlLoja };
+      if (navigator.share) { try { await navigator.share(dados); } catch {} }
+      else { try { await navigator.clipboard.writeText(urlLoja); toast('Link copiado'); } catch { toast(urlLoja, { ms: 8000 }); } }
+    }
+    if (r === 'por-loja' || r === 'tirar-loja') {
+      await store.salvar({ id: c.id, publicada: r === 'por-loja' });
+      toast(r === 'por-loja' ? 'Agora aparece na loja' : 'Saiu da loja');
+      recarregar();
+    }
     if (r === 'editar') location.hash = `#editar-${c.id}`;
     if (r === 'duplicar') {
       const { id, numero, fotos, created_at, updated_at, owner_id, ...resto } = c;

@@ -1,0 +1,17 @@
+# Camisa XX · loja pública (lê o mesmo banco do admin, só colunas públicas)
+name = "camisa-xx-loja"
+pages_build_output_dir = "public"
+compatibility_date = "2025-10-01"
+
+[vars]
+WHATSAPP = ""      # só números, com DDI: 5531999999999
+INSTAGRAM = ""     # sem @
+
+[[d1_databases]]
+binding = "DB"
+database_name = "camisa-xx"
+database_id = "396ac01c-51e5-471e-ae9f-a17b1c1f30a6"
+
+[[kv_namespaces]]
+binding = "FOTOS"
+id = "bc30ef75f6b4467eb4aeb189d0c03d40"
