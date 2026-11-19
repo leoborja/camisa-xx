@@ -5,6 +5,8 @@
 export const CONFIG = {
   // Loja pública (troca pra https://camisaxx.com.br quando o domínio estiver ativo)
   LOJA_URL: 'https://camisa-xx-loja.pages.dev',
+  // WhatsApp do Camisa XX (aparece na legenda do Instagram)
+  WHATSAPP: '5531984149418',
   SUPABASE_URL: '',
   SUPABASE_ANON_KEY: '',
 };

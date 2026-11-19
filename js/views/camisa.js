@@ -2,6 +2,7 @@
 import { esc, fmtBRL, fmtPct, fmtData, hojeISO, lerBRL, valorCampo, toast, acoes, confirmar, sheet } from '../ui.js';
 import { STATUS, TIPOS, MODELOS, CONSERVACAO, MANGAS, CANAIS, rotulo, custo, lucro, retorno, diasNoAcervo, titulo, subtitulo, numeroFmt, slugLoja } from '../dominio.js';
 import { CONFIG } from '../config.js';
+import { mostrarLegenda, imprimirEtiqueta } from '../divulgar.js';
 import { ICONE, arteCamisa } from '../icones.js';
 
 export const tela = 'detalhe';
@@ -174,12 +175,16 @@ export async function render(root, { store, params, ehAtual }) {
       ...(c.publicada
         ? [{ valor: 'compartilhar', rotulo: 'Compartilhar link da loja' }, { valor: 'ver-loja', rotulo: 'Ver na loja' }, { valor: 'tirar-loja', rotulo: 'Tirar da loja' }]
         : [{ valor: 'por-loja', rotulo: 'Mostrar na loja' }]),
+      { valor: 'legenda', rotulo: 'Legenda pro Instagram' },
+      { valor: 'etiqueta', rotulo: 'Etiqueta com QR code' },
       { valor: 'editar', rotulo: 'Editar' },
       { valor: 'duplicar', rotulo: 'Duplicar (camisa parecida)' },
       { valor: 'excluir', rotulo: 'Excluir camisa', perigo: true },
     ]);
     const urlLoja = `${CONFIG.LOJA_URL}/camisa/${slugLoja(c)}`;
     if (r === 'ver-loja') window.open(urlLoja, '_blank', 'noopener');
+    if (r === 'legenda') mostrarLegenda(c);
+    if (r === 'etiqueta') imprimirEtiqueta(c);
     if (r === 'compartilhar') {
       const dados = { title: titulo(c), text: `${titulo(c)}${c.preco_pedido != null && c.status !== 'vendida' ? ` · ${fmtBRL(c.preco_pedido)}` : ''}`, url: urlLoja };
       if (navigator.share) { try { await navigator.share(dados); } catch {} }

@@ -136,6 +136,24 @@ async function inicio(env, origem) {
     <p class="nada" id="nada" hidden>Nenhuma camisa com esses filtros.</p>`
     : `<p class="nada">As primeiras camisas chegam em breve.</p>`}
   </div></section>
+  ${env.WHATSAPP ? `
+  <section class="procuro"><div class="faixa">
+    <div class="procuro-caixa">
+      <div>
+        <h2>Procura uma camisa específica?</h2>
+        <p>Diz qual é que a gente vai atrás. Muita coisa boa chega antes de entrar no site.</p>
+      </div>
+      <form id="f-procuro" data-whats="${esc(String(env.WHATSAPP).replace(/\D/g, ''))}">
+        <label><span>Clube ou seleção</span><input name="clube" required placeholder="Ex.: Flamengo" autocomplete="off"></label>
+        <div class="procuro-duas">
+          <label><span>Ano ou década</span><input name="ano" placeholder="Ex.: 1981 ou anos 90" autocomplete="off"></label>
+          <label><span>Tamanho</span><input name="tamanho" placeholder="Ex.: G" autocomplete="off"></label>
+        </div>
+        <label><span>Detalhes <em>opcional</em></span><input name="obs" placeholder="Ex.: titular, com número 10" autocomplete="off"></label>
+        <button type="submit" class="btn-comprar">Pedir pelo WhatsApp</button>
+      </form>
+    </div>
+  </div></section>` : ''}
   <script>
   (function(){
     var g=document.getElementById('grade'); if(!g) return;
@@ -154,6 +172,18 @@ async function inicio(env, origem) {
     }
     [b,s,d,t].forEach(function(el){ if(el) el.addEventListener('input',f); });
     f();
+  })();
+  (function(){
+    var p=document.getElementById('f-procuro'); if(!p) return;
+    p.addEventListener('submit',function(e){
+      e.preventDefault();
+      var v=function(n){return (p.elements[n].value||'').trim();};
+      var partes=['Olá! Estou procurando uma camisa:', '• Clube: '+v('clube')];
+      if(v('ano')) partes.push('• Ano: '+v('ano'));
+      if(v('tamanho')) partes.push('• Tamanho: '+v('tamanho'));
+      if(v('obs')) partes.push('• Detalhes: '+v('obs'));
+      location.href='https://wa.me/'+p.dataset.whats+'?text='+encodeURIComponent(partes.join('\\n'));
+    });
   })();
   </script>`;
   return pagina(env, {

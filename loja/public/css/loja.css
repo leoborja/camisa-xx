@@ -123,6 +123,21 @@ h1, h2 { text-wrap: balance; }
 .ficha dd { margin: 0; font-size: 15px; overflow-wrap: anywhere; }
 .obs { margin: 4px 0 0; white-space: pre-wrap; color: var(--suave); }
 
+/* procuro uma camisa */
+.procuro .faixa { padding-block: 0 48px; }
+.procuro-caixa { display: grid; gap: 18px; background: var(--verde); color: var(--papel); border-radius: 18px; padding: 22px; }
+@media (min-width: 820px) { .procuro-caixa { grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); gap: 32px; padding: 32px; align-items: center; } }
+.procuro h2 { margin: 0 0 6px; font-family: var(--display); font-weight: 800; font-size: 32px; line-height: 1; text-transform: uppercase; }
+.procuro p { margin: 0; color: color-mix(in srgb, var(--papel) 82%, transparent); }
+#f-procuro { display: grid; gap: 10px; }
+#f-procuro label { display: grid; gap: 4px; min-width: 0; }
+#f-procuro span { font-size: 13px; font-weight: 650; }
+#f-procuro em { font-style: normal; font-weight: 400; opacity: .75; }
+#f-procuro input { font: inherit; font-size: 16px; border: 0; border-radius: 10px; padding: 11px 12px; background: var(--papel); color: var(--tinta); width: 100%; min-width: 0; }
+.procuro-duas { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; }
+#f-procuro .btn-comprar { background: var(--creme); color: var(--verde); border: 0; margin-top: 4px; }
+#f-procuro .btn-comprar:hover { background: var(--papel); }
+
 /* rodapé */
 .rodape { border-top: 1px solid var(--linha); background: var(--papel-2); }
 .rodape .faixa { display: flex; align-items: center; gap: 16px; padding-block: 24px calc(24px + env(safe-area-inset-bottom, 0px)); }
