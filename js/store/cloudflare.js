@@ -1,17 +1,18 @@
 // Store real: API própria no Cloudflare (functions/api) — D1 pros dados, KV pras fotos.
 // Mesma interface do store local (modo demonstração).
 
-export async function criarStoreCloudflare() {
+export async function criarStoreCloudflare({ base = '', senha = null } = {}) {
   const ouvintes = [];
   let usuario = null;
   const avisar = (u) => { usuario = u; ouvintes.forEach((f) => f(u)); };
 
   async function api(caminho, { metodo = 'GET', corpo } = {}) {
-    const opts = { method: metodo, credentials: 'same-origin', headers: {} };
+    const opts = { method: metodo, credentials: base ? 'omit' : 'same-origin', headers: {} };
+    if (senha) opts.headers['x-camisa-senha'] = senha;
     if (corpo instanceof FormData) opts.body = corpo;
     else if (corpo !== undefined) { opts.body = JSON.stringify(corpo); opts.headers['content-type'] = 'application/json'; }
     let r;
-    try { r = await fetch(`/api${caminho}`, opts); } catch { throw new Error('Sem conexão com a internet.'); }
+    try { r = await fetch(`${base}/api${caminho}`, opts); } catch { throw new Error('Sem conexão com a internet.'); }
     if (r.status === 401 && caminho !== '/login') { avisar(null); throw new Error('Entre de novo pra continuar.'); }
     let dados = null;
     try { dados = await r.json(); } catch {}
@@ -34,6 +35,7 @@ export async function criarStoreCloudflare() {
       } catch { usuario = null; }
       return usuario;
     },
+    async verificar() { await api('/eu'); },
     async entrar(_email, senha) { avisar(await api('/login', { metodo: 'POST', corpo: { senha } })); },
     async sair() { try { await api('/logout', { metodo: 'POST' }); } finally { avisar(null); } },
     aoMudarLogin(cb) { ouvintes.push(cb); },

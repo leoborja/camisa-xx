@@ -26,6 +26,20 @@ const BOOLEANOS = new Set(['certificado', 'publicada']);
 const COOKIE = 'cxx_sessao';
 const SESSAO_DIAS = 180;
 const MAX_FOTO = 4 * 1024 * 1024;
+// Origens que podem chamar a API de fora (site de demonstração transferindo camisas pro oficial)
+const ORIGENS_TRANSFERENCIA = new Set(['https://leoborja.github.io', 'http://localhost:8095']);
+const CABECALHO_SENHA = 'x-camisa-senha';
+
+function comCors(resp, origem) {
+  if (!ORIGENS_TRANSFERENCIA.has(origem)) return resp;
+  const r = new Response(resp.body, resp);
+  r.headers.set('access-control-allow-origin', origem);
+  r.headers.set('access-control-allow-methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  r.headers.set('access-control-allow-headers', `content-type, ${CABECALHO_SENHA}`);
+  r.headers.set('access-control-max-age', '600');
+  r.headers.append('vary', 'origin');
+  return r;
+}
 
 const json = (dados, status = 200, extra = {}) => new Response(JSON.stringify(dados), {
   status, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store', ...extra },
@@ -177,8 +191,27 @@ async function servirFoto(env, id, miniatura) {
   });
 }
 
+const senhaConfere = async (senha, env) =>
+  typeof senha === 'string' && senha.length > 0 && iguais(await hmac('cmp', senha), await hmac('cmp', env.APP_SENHA));
+
+// Sessão do navegador (cookie) ou senha no cabeçalho (usada só pela transferência do site de demonstração)
+async function autorizado(request, env) {
+  if (await sessaoValida(request, env)) return true;
+  const senha = request.headers.get(CABECALHO_SENHA);
+  if (senha === null) return false;
+  if (await senhaConfere(senha, env)) return true;
+  await new Promise((r) => setTimeout(r, 600));
+  return false;
+}
+
 // ---------- roteador ----------
-export async function onRequest({ request, env, params }) {
+export async function onRequest(contexto) {
+  const origem = contexto.request.headers.get('origin') || '';
+  if (contexto.request.method === 'OPTIONS') return comCors(new Response(null, { status: 204 }), origem);
+  return comCors(await rotear(contexto), origem);
+}
+
+async function rotear({ request, env, params }) {
   const partes = [].concat(params.rota || []);
   const metodo = request.method;
   const corpoJson = async () => { try { return await request.json(); } catch { return {}; } };
@@ -191,7 +224,7 @@ export async function onRequest({ request, env, params }) {
 
     if (a === 'login' && metodo === 'POST') {
       const { senha } = await corpoJson();
-      const ok = typeof senha === 'string' && iguais(await hmac('cmp', senha), await hmac('cmp', env.APP_SENHA));
+      const ok = await senhaConfere(senha, env);
       if (!ok) {
         await new Promise((r) => setTimeout(r, 600)); // freia tentativa de adivinhar
         return erro('Senha incorreta.', 401);
@@ -202,7 +235,7 @@ export async function onRequest({ request, env, params }) {
 
     if (a === 'fotos' && b && metodo === 'GET') return servirFoto(env, b, new URL(request.url).searchParams.has('t'));
 
-    if (!(await sessaoValida(request, env))) return erro('Entre de novo pra continuar.', 401);
+    if (!(await autorizado(request, env))) return erro('Entre de novo pra continuar.', 401);
 
     if (a === 'eu' && metodo === 'GET') return json({ id: 'dono', email: 'Acesso do dono' });
 

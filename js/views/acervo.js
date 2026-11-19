@@ -3,6 +3,7 @@ import { esc, fmtBRL0, normalizar, toast } from '../ui.js';
 import { STATUS, MODELOS, rotulo, custo, numeroFmt, decada } from '../dominio.js';
 import { ICONE, arteCamisa } from '../icones.js';
 import { carregarExemplos } from '../exemplos.js';
+import { deveOferecer, blocoTransferencia, ligarTransferencia } from '../migrar.js';
 
 export const tela = 'lista';
 
@@ -58,11 +59,14 @@ function cartao(c) {
 export async function render(root, { store, ehAtual }) {
   root.innerHTML = '<div class="carregando"><span class="girando"></span></div>';
   const todas = (await store.listar()).map((c) => ({ ...c, _busca: textoBusca(c) }));
+  const transf = deveOferecer(store) ? await blocoTransferencia(store) : '';
   if (!ehAtual()) return;
+  const recarregar = () => render(root, { store, ehAtual });
 
   if (!todas.length) {
     root.innerHTML = `
       <header class="topo"><div><h1>Acervo</h1></div></header>
+      ${transf}
       <div class="vazio">
         <div class="vazio-icone">${ICONE.camisa}</div>
         <h2>Nenhuma camisa ainda</h2>
@@ -88,6 +92,7 @@ export async function render(root, { store, ehAtual }) {
         <p class="sub">${noAcervo.length} ${noAcervo.length === 1 ? 'camisa' : 'camisas'} · ${fmtBRL0(investido)} investidos</p>
       </div>
     </header>
+    ${transf}
     <div class="fixo-busca">
       <label class="busca">${ICONE.busca}
         <input type="search" id="q" placeholder="Clube, ano, jogador, código…" value="${esc(estado.q)}" enterkeyhint="search" autocomplete="off" autocorrect="off">
@@ -136,6 +141,7 @@ export async function render(root, { store, ehAtual }) {
     desenhar();
   });
 
+  ligarTransferencia(root, store, recarregar);
   desenhar();
   requestAnimationFrame(() => window.scrollTo(0, estado.scroll));
   return () => { estado.scroll = window.scrollY; };
