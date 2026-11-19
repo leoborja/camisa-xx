@@ -1,5 +1,5 @@
 // Detalhe de uma camisa: galeria, preço/lucro, ficha completa, ações rápidas.
-import { esc, fmtBRL, fmtPct, fmtData, hojeISO, lerBRL, valorCampo, toast, acoes, confirmar, sheet } from '../ui.js';
+import { esc, fmtBRL, fmtPct, fmtData, hojeISO, lerBRL, valorCampo, toast, acoes, confirmar, sheet, normalizar, linkWhats, fmtWhats } from '../ui.js';
 import { STATUS, TIPOS, MODELOS, CONSERVACAO, MANGAS, CANAIS, rotulo, custo, lucro, retorno, diasNoAcervo, titulo, subtitulo, numeroFmt, slugLoja } from '../dominio.js';
 import { CONFIG } from '../config.js';
 import { mostrarLegenda, imprimirEtiqueta } from '../divulgar.js';
@@ -61,7 +61,33 @@ function abrirVisor(fotos, inicio) {
   v.querySelector('.visor-fechar').addEventListener('click', () => { v.remove(); document.body.classList.remove('travado'); });
 }
 
+function blocoTroca(t, lado) {
+  if (!t) return '';
+  const quem = t.contato ? `<a href="#contato-${t.contato.id}"><b>${esc(t.contato.nome)}</b></a>` : 'alguém';
+  const outras = (t.outras || []).filter((x) => (lado === 'entrada' ? x.troca_saida_id === t.id : x.troca_entrada_id === t.id));
+  const dinheiro = t.dinheiro > 0 ? ` + você pagou ${fmtBRL(t.dinheiro)}` : t.dinheiro < 0 ? ` e você recebeu ${fmtBRL(-t.dinheiro)}` : '';
+  const lista = outras.map((x) => `<a href="#c-${x.id}">${esc([x.clube, x.temporada].filter(Boolean).join(' '))}</a>`).join(', ') || 'outra camisa';
+  return `<section class="cartao"><h3>Troca <em>${fmtData(t.data)}</em></h3><p class="texto-troca">${lado === 'entrada'
+    ? `Chegou numa troca com ${quem}: saiu ${lista}${dinheiro}.`
+    : `Saiu numa troca com ${quem}: entrou ${lista}${dinheiro}.`}</p></section>`;
+}
+
+async function avisarInteressados(store, c) {
+  const lista = await store.interessados(c.id);
+  const url = `${CONFIG.LOJA_URL}/camisa/${slugLoja(c)}`;
+  const msg = (nome) => `Fala, ${nome.split(' ')[0]}! Chegou uma camisa que é a sua cara: ${titulo(c)}${c.tamanho ? `, tamanho ${c.tamanho}` : ''}${c.preco_pedido != null && c.status !== 'vendida' ? ` por ${fmtBRL(c.preco_pedido)}` : ''}.${c.publicada ? ` Dá uma olhada: ${url}` : ''}`;
+  await sheet({
+    titulo: `Avisar quem curte ${c.clube}`,
+    html: lista.length ? `<div class="form-sheet"><p class="suave">Toque em cada um pra abrir o WhatsApp com a mensagem pronta.</p>
+      <ul class="lista-simples escolha">${lista.map((p) => `<li><a href="${esc(linkWhats(p.whatsapp, msg(p.nome)))}" target="_blank" rel="noopener" class="enviado-toggle">
+        <span><b>${esc(p.nome)}</b><small>${esc(p.motivos.join(' · '))} · ${esc(fmtWhats(p.whatsapp))}</small></span><span class="dir">Enviar →</span></a></li>`).join('')}</ul></div>`
+      : `<div class="form-sheet"><p>Ninguém ligado a ${esc(c.clube)} ainda.</p><p class="suave">Quando você registra uma venda com o WhatsApp do comprador, ou preenche o campo "Curte" de um contato, ele passa a aparecer aqui.</p><a class="btn" href="#contatos">Ver contatos</a></div>`,
+    aoMontar: (el) => el.querySelectorAll('.enviado-toggle').forEach((a) => a.addEventListener('click', () => a.classList.add('enviado'))),
+  });
+}
+
 async function registrarVenda(store, c) {
+  const contatos = store.contatos ? await store.contatos().catch(() => []) : [];
   const r = await sheet({
     titulo: 'Registrar venda',
     html: `
@@ -71,19 +97,33 @@ async function registrarVenda(store, c) {
         <label class="campo"><span>Data</span><input type="date" name="data" value="${hojeISO()}" required></label>
         <label class="campo"><span>Onde vendeu</span>
           <select name="canal"><option value="">—</option>${CANAIS.map((x) => `<option ${x === c.canal_venda ? 'selected' : ''}>${esc(x)}</option>`).join('')}</select></label>
-        <label class="campo"><span>Comprador <em>opcional</em></span><input name="comprador" value="${esc(c.comprador || '')}" autocomplete="off"></label>
+        <label class="campo"><span>Comprador <em>opcional</em></span><input name="comprador" value="${esc(c.comprador || '')}" autocomplete="off" list="dl-comp" autocapitalize="words"></label>
+        <datalist id="dl-comp">${contatos.map((x) => `<option value="${esc(x.nome)}">`).join('')}</datalist>
+        ${store.contatos ? '<label class="campo" id="whats-comp" hidden><span>WhatsApp do comprador <em>vira contato pra você avisar quando chegar camisa do time dele</em></span><input name="whats" inputmode="tel" placeholder="(31) 99999-9999"></label>' : ''}
         <button class="btn btn-primario btn-cheio" type="submit">Confirmar venda</button>
       </form>`,
-    aoMontar: (el, fechar) => el.querySelector('#f-venda').addEventListener('submit', (ev) => {
-      ev.preventDefault();
-      const f = ev.target;
-      const valor = lerBRL(f.valor.value);
-      if (valor == null) { f.valor.focus(); return; }
-      fechar({ valor_venda: valor, data_venda: f.data.value, canal_venda: f.canal.value || null, comprador: f.comprador.value.trim() || null });
-    }),
+    aoMontar: (el, fechar) => {
+      const f = el.querySelector('#f-venda');
+      const achar = () => contatos.find((x) => normalizar(x.nome) === normalizar(f.comprador.value.trim()));
+      const ver = () => { const w = el.querySelector('#whats-comp'); if (w) w.hidden = !f.comprador.value.trim() || Boolean(achar()); };
+      f.comprador.addEventListener('input', ver); ver();
+      f.addEventListener('submit', (ev) => {
+        ev.preventDefault();
+        const valor = lerBRL(f.valor.value);
+        if (valor == null) { f.valor.focus(); return; }
+        fechar({ valor_venda: valor, data_venda: f.data.value, canal_venda: f.canal.value || null, comprador: f.comprador.value.trim() || null,
+          _contato: achar() || null, _whats: f.whats?.value || '' });
+      });
+    },
   });
   if (!r) return false;
-  await store.salvar({ id: c.id, status: 'vendida', ...r });
+  const { _contato, _whats, ...venda } = r;
+  let comprador_id = _contato?.id || null;
+  if (!comprador_id && venda.comprador && store.salvarContato) {
+    const novo = await store.salvarContato({ nome: venda.comprador, whatsapp: _whats, tipo: 'cliente', interesses: c.clube });
+    comprador_id = novo.id;
+  }
+  await store.salvar({ id: c.id, status: 'vendida', ...venda, ...(comprador_id ? { comprador_id } : {}) });
   toast('Venda registrada');
   return true;
 }
@@ -128,9 +168,11 @@ export async function render(root, { store, params, ehAtual }) {
       ${secao('Estado', linhas([['Conservação', rotulo(CONSERVACAO, c.conservacao)], ['Defeitos', c.defeitos]]))}
       ${secao('Compra', linhas([
         ['Data', c.data_compra && fmtData(c.data_compra)], ['Valor pago', c.valor_compra != null && fmtBRL(c.valor_compra)],
-        ['Custos extras', c.custos_extras != null && fmtBRL(c.custos_extras)], ['Comprou de', c.origem],
-      ]))}
-      ${c.status === 'vendida' ? secao('Venda', linhas([['Comprador', c.comprador], ['Canal', c.canal_venda]])) : ''}
+        ['Custos extras', c.custos_extras != null && fmtBRL(c.custos_extras)], ['Comprou de', c.fornecedor ? null : c.origem],
+      ]) + (c.fornecedor ? `<a class="link-contato" href="#contato-${c.fornecedor.id}">Comprou de <b>${esc(c.fornecedor.nome)}</b> →</a>` : ''))}
+      ${blocoTroca(c.troca_entrada, 'entrada')}${blocoTroca(c.troca_saida, 'saida')}
+      ${c.status === 'vendida' ? secao('Venda', linhas([['Comprador', c.comprador_contato ? null : c.comprador], ['Canal', c.canal_venda]])
+        + (c.comprador_contato ? `<a class="link-contato" href="#contato-${c.comprador_contato.id}">Vendida pra <b>${esc(c.comprador_contato.nome)}</b> →</a>` : '')) : ''}
       ${secao('Observações', c.observacoes ? `<p class="texto-livre">${esc(c.observacoes)}</p>` : '')}
     </div>
 
@@ -175,6 +217,8 @@ export async function render(root, { store, params, ehAtual }) {
       ...(c.publicada
         ? [{ valor: 'compartilhar', rotulo: 'Compartilhar link da loja' }, { valor: 'ver-loja', rotulo: 'Ver na loja' }, { valor: 'tirar-loja', rotulo: 'Tirar da loja' }]
         : [{ valor: 'por-loja', rotulo: 'Mostrar na loja' }]),
+      ...(store.interessados ? [{ valor: 'avisar', rotulo: 'Avisar interessados no WhatsApp' }] : []),
+      ...(store.registrarTroca && c.status !== 'vendida' ? [{ valor: 'trocar', rotulo: 'Registrar troca com esta camisa' }] : []),
       { valor: 'legenda', rotulo: 'Legenda pro Instagram' },
       { valor: 'etiqueta', rotulo: 'Etiqueta com QR code' },
       { valor: 'editar', rotulo: 'Editar' },
@@ -183,6 +227,8 @@ export async function render(root, { store, params, ehAtual }) {
     ]);
     const urlLoja = `${CONFIG.LOJA_URL}/camisa/${slugLoja(c)}`;
     if (r === 'ver-loja') window.open(urlLoja, '_blank', 'noopener');
+    if (r === 'avisar') avisarInteressados(store, c);
+    if (r === 'trocar') location.hash = `#troca-${c.id}`;
     if (r === 'legenda') mostrarLegenda(c);
     if (r === 'etiqueta') imprimirEtiqueta(c);
     if (r === 'compartilhar') {

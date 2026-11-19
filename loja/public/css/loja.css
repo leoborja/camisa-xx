@@ -79,6 +79,7 @@ h1, h2 { text-wrap: balance; }
 .cartao-preco { margin-top: 6px; font-weight: 750; font-size: 16px; font-variant-numeric: tabular-nums; }
 .selo { position: absolute; left: 10px; top: 10px; font-size: 12px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; padding: 4px 9px; border-radius: 4px; background: var(--tinta); color: var(--papel); transform: rotate(-3deg); }
 .selo.reservada { background: var(--ouro); }
+.selo.novo { background: var(--verde); color: var(--papel); }
 .selo.exemplo { background: var(--papel); color: var(--tinta); border: 1.5px dashed var(--tinta); }
 .aviso.exemplo { border: 1.5px dashed var(--linha); background: transparent; }
 .sem-foto { width: 100%; height: 100%; display: grid; place-items: center; }
@@ -137,6 +138,36 @@ h1, h2 { text-wrap: balance; }
 .procuro-duas { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; }
 #f-procuro .btn-comprar { background: var(--creme); color: var(--verde); border: 0; margin-top: 4px; }
 #f-procuro .btn-comprar:hover { background: var(--papel); }
+
+/* tem uma camisa guardada? */
+.guardada .faixa { padding-block: 0 48px; }
+.guardada-caixa { display: grid; gap: 18px; background: var(--cartao); border: 2px dashed var(--tinta); border-radius: 18px; padding: 22px; }
+@media (min-width: 820px) { .guardada-caixa { grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr); gap: 32px; padding: 32px; } }
+.guardada h2 { margin: 0 0 6px; font-family: var(--display); font-weight: 800; font-size: 32px; line-height: 1; text-transform: uppercase; }
+.guardada p { margin: 0; color: var(--suave); }
+#f-guardada { display: grid; gap: 10px; }
+#f-guardada label { display: grid; gap: 4px; min-width: 0; }
+#f-guardada label > span { font-size: 13px; font-weight: 650; }
+#f-guardada em { font-style: normal; font-weight: 400; color: var(--suave); }
+#f-guardada input:not([type=radio]):not([type=file]), #f-guardada select, #f-guardada textarea {
+  font: inherit; font-size: 16px; border: 1px solid var(--linha); border-radius: 10px; padding: 11px 12px; background: var(--papel); color: var(--tinta); width: 100%; min-width: 0;
+}
+#f-guardada input[type=file] { font-size: 15px; }
+.pote { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
+.escolha-intencao { display: flex; gap: 6px; background: var(--papel-2); border-radius: 12px; padding: 4px; }
+.escolha-intencao label { flex: 1; display: block !important; }
+.escolha-intencao input { position: absolute; opacity: 0; width: 1px; }
+.escolha-intencao span { display: block; text-align: center; padding: 9px 4px; border-radius: 9px; font-weight: 600; font-size: 15px; cursor: pointer; }
+.escolha-intencao input:checked + span { background: var(--tinta); color: var(--papel); }
+.escolha-intencao input:focus-visible + span { outline: 2px solid var(--verde); }
+.fotos-previa { display: flex; gap: 8px; flex-wrap: wrap; }
+.fotos-previa img { width: 64px; height: 64px; object-fit: cover; border-radius: 8px; }
+.g-erro { margin: 0; color: var(--ferrugem); font-weight: 600; font-size: 14px; }
+.guardada-ok { display: grid; gap: 12px; align-content: start; }
+.guardada-ok h3 { margin: 0; font-family: var(--display); font-weight: 800; font-size: 28px; text-transform: uppercase; color: var(--verde); }
+.oferta-tit { font-family: var(--display); font-weight: 800; font-size: clamp(36px, 7vw, 54px); line-height: 1; text-transform: uppercase; margin: 4px 0 6px; }
+.oferta-fotos { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin-top: 18px; }
+.oferta-fotos img { width: 100%; aspect-ratio: 4 / 5; object-fit: cover; border-radius: 12px; }
 
 /* rodapé */
 .rodape { border-top: 1px solid var(--linha); background: var(--papel-2); }

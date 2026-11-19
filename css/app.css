@@ -67,6 +67,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
 h1, h2, h3 { text-wrap: balance; margin: 0; }
 .suave { color: var(--muted); }
+[hidden] { display: none !important; }
 
 #app {
   max-width: 640px;
@@ -522,3 +523,56 @@ body[data-tela="form"] #tabbar, body[data-tela="detalhe"] #tabbar, body[data-tel
   body.imprimindo .area-impressao { display: block; }
   body.imprimindo::before { display: none; }
 }
+
+/* ---------- contatos, trocas e ofertas ---------- */
+#tabbar { grid-template-columns: repeat(5, 1fr); }
+#tabbar a svg { width: 23px; height: 23px; }
+body:is([data-tela="contatos"]) #app { padding-top: 0; }
+.topo .btn-peq { min-height: 38px; padding: 0 14px; font-size: 15px; }
+.topo .btn-peq svg { width: 16px; height: 16px; }
+.cartao-link {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 0 12px;
+  padding: 14px 16px; border-radius: var(--r); background: var(--surface); box-shadow: var(--shadow);
+}
+.cartao-link span:first-child { display: grid; }
+.cartao-link small { color: var(--muted); font-size: 13px; }
+.ofertas-link.tem { background: var(--accent-soft); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 35%, transparent); }
+.bolinha { min-width: 26px; height: 26px; border-radius: 13px; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center; font-weight: 700; font-size: 14px; padding: 0 7px; }
+.lista-contatos, .lista-ofertas { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.lista-contatos a, .lista-ofertas a { display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: var(--r); background: var(--surface); box-shadow: var(--shadow); }
+.avatar { flex: none; width: 42px; height: 42px; border-radius: 50%; background: var(--accent-soft); color: var(--accent); display: grid; place-items: center; font-family: var(--font-display); font-weight: 800; font-size: 20px; }
+.ct-info, .of-info { display: grid; min-width: 0; gap: 1px; }
+.ct-info small, .of-info small { color: var(--muted); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ct-int { color: var(--accent) !important; }
+.of-foto { flex: none; width: 56px; height: 56px; border-radius: 10px; overflow: hidden; background: var(--surface-2); display: grid; place-items: center; color: var(--muted); }
+.of-foto img { width: 100%; height: 100%; object-fit: cover; }
+.of-foto svg { width: 28px; height: 28px; }
+.lista-ofertas .selo { margin-left: auto; flex: none; }
+.lista-ofertas a.recusada { opacity: .6; }
+.link-contato { display: inline-block; margin-top: 10px; color: var(--accent); font-size: 15px; }
+.texto-troca { margin: 0; line-height: 1.5; }
+.texto-troca a { color: var(--accent); font-weight: 600; }
+.perigo-link { color: var(--neg); justify-self: center; }
+.lista-simples.escolha button, .lista-simples.escolha a { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 11px 2px; background: none; border: 0; text-align: left; font: inherit; color: inherit; }
+.lista-simples.escolha a.enviado .dir { color: var(--pos); }
+.lista-simples.escolha a.enviado .dir::after { content: " ✓"; }
+.form-sheet .busca { margin-bottom: 4px; }
+.troca-lista { display: grid; gap: 10px; margin-bottom: 12px; }
+.troca-item { display: flex; gap: 12px; align-items: flex-start; padding: 10px; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--bg); }
+.troca-item.entrada { padding-top: 12px; }
+.troca-capa { flex: none; width: 56px; height: 70px; border-radius: 8px; overflow: hidden; background: var(--surface-2); }
+.troca-capa img { width: 100%; height: 100%; object-fit: cover; }
+.troca-txt { flex: 1; min-width: 0; display: grid; gap: 4px; }
+.troca-txt small { color: var(--muted); font-size: 13px; }
+.troca-txt .duas + .duas { margin-top: 10px; }
+.valor-troca { display: grid; gap: 4px; margin-top: 6px; }
+.valor-troca span { font-size: 13px; font-weight: 600; }
+.btn-icone.peq { width: 32px; height: 32px; box-shadow: none; background: var(--surface-2); flex: none; }
+.btn-icone.peq svg { width: 16px; height: 16px; }
+.troca-resumo { display: grid; gap: 6px; margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--line); font-variant-numeric: tabular-nums; }
+.troca-resumo > div { display: flex; justify-content: space-between; gap: 12px; font-size: 15px; }
+.troca-resumo > div span { color: var(--muted); }
+.troca-resumo .total { font-weight: 700; padding-top: 6px; border-top: 1px dashed var(--line); }
+.troca-resumo .total span { color: var(--ink); }
+.aviso-dif { margin: 6px 0 0; color: var(--neg); font-size: 14px; font-weight: 600; }
+.ok-dif { margin: 6px 0 0; color: var(--pos); font-size: 14px; font-weight: 700; }

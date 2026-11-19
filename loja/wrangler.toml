@@ -6,6 +6,7 @@ compatibility_date = "2025-10-01"
 [vars]
 WHATSAPP = "5531984149418"   # só números, com DDI
 INSTAGRAM = "camisa_xx"      # sem @
+GA4_ID = ""                   # ID de métricas do GA4 (G-XXXXXXX); vazio = sem GA4
 
 [[d1_databases]]
 binding = "DB"

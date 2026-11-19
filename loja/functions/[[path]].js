@@ -18,12 +18,15 @@ const titulo = (c) => [c.clube, c.temporada].filter(Boolean).join(' ');
 const disponivel = (c) => c.status === 'estoque' || c.status === 'anunciada';
 // Camisas de exemplo (pra mostrar a loja) ficam marcadas e sem botão de compra
 const ehExemplo = (c) => c.observacoes === 'Exemplo de demonstração';
+// "Chegou agora": cadastrada nos últimos 7 dias e ainda à venda
+const novidade = (c) => disponivel(c) && Date.now() - Date.parse(c.created_at) < 7 * 86400000;
 const precoTxt = (c) => (c.status === 'vendida' ? 'Vendida' : c.preco_pedido != null ? brl.format(c.preco_pedido) : 'Sob consulta');
 
 function seloStatus(c) {
   if (ehExemplo(c)) return `<span class="selo exemplo">Exemplo${c.status === 'vendida' ? ' · vendida' : c.status === 'reservada' ? ' · reservada' : ''}</span>`;
   if (c.status === 'vendida') return '<span class="selo vendida">Vendida</span>';
   if (c.status === 'reservada') return '<span class="selo reservada">Reservada</span>';
+  if (novidade(c)) return '<span class="selo novo">Chegou agora</span>';
   return '';
 }
 
@@ -58,11 +61,20 @@ function pagina(env, { tituloPag, descricao, url, imagem, corpo, classe = '' }) 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;700;800&display=swap">
 <link rel="stylesheet" href="/css/loja.css">
+${env.GA4_ID ? `<script async src="https://www.googletagmanager.com/gtag/js?id=${esc(env.GA4_ID)}"></script>
+<script>
+window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}
+gtag('js',new Date());gtag('config','${esc(env.GA4_ID)}');
+document.addEventListener('click',function(e){
+  var a=e.target.closest&&e.target.closest('a[href*="wa.me"]'); if(!a) return;
+  gtag('event','generate_lead',{method:'whatsapp',origem:a.dataset.origem||'contato',item_id:a.dataset.camisa||'',value:Number(a.dataset.valor)||undefined,currency:'BRL',transport_type:'beacon'});
+});
+</script>` : ''}
 </head>
 <body class="${classe}">
 <header class="topo"><div class="faixa">
   <a class="marca" href="/"><img src="/icons/marca-64.png" alt="" width="34" height="34"><span>Camisa XX</span></a>
-  ${whats ? `<a class="topo-contato" href="${esc(whats)}" target="_blank" rel="noopener">Fale com a gente</a>` : ''}
+  ${whats ? `<a class="topo-contato" data-origem="topo" href="${esc(whats)}" target="_blank" rel="noopener">Fale com a gente</a>` : ''}
 </div></header>
 <main>${corpo}</main>
 <footer class="rodape"><div class="faixa">
@@ -82,9 +94,9 @@ function capaDe(c, fotos, base) {
   return f ? `<img src="/foto/${f.id}?t=1" alt="${esc(titulo(c))}" loading="lazy" decoding="async">` : arteCamisa(c);
 }
 
-function cartao(c, fotos) {
+function cartao(c, fotos, i) {
   const sub = [rotulo(MODELOS, c.modelo), c.tamanho && `Tam. ${c.tamanho}`].filter(Boolean).join(' · ');
-  const dados = `data-status="${c.status}" data-decada="${esc(decada(c.ano) || '')}" data-tamanho="${esc((c.tamanho || '').toUpperCase())}" data-busca="${esc(semAcento([c.clube, c.temporada, c.jogador, c.marca].filter(Boolean).join(' ')).toLowerCase())}"`;
+  const dados = `data-i="${i}" data-preco="${disponivel(c) && c.preco_pedido != null ? c.preco_pedido : ''}" data-status="${c.status}" data-decada="${esc(decada(c.ano) || '')}" data-tamanho="${esc((c.tamanho || '').toUpperCase())}" data-busca="${esc(semAcento([c.clube, c.temporada, c.jogador, c.marca].filter(Boolean).join(' ')).toLowerCase())}"`;
   return `<a class="cartao ${disponivel(c) ? '' : 'indisponivel'}" href="/camisa/${slug(c)}" ${dados}>
     <div class="cartao-foto">${capaDe(c, fotos)}${seloStatus(c)}</div>
     <div class="cartao-info">
@@ -129,10 +141,11 @@ async function inicio(env, origem) {
       <div class="selects">
         <select id="f-status" aria-label="Disponibilidade"><option value="disp">Disponíveis</option><option value="">Todas</option><option value="vendida">Já vendidas</option></select>
         ${decadas.length > 1 ? `<select id="f-decada" aria-label="Década"><option value="">Todas as décadas</option>${decadas.map((d) => `<option>${esc(d)}</option>`).join('')}</select>` : ''}
+        <select id="f-ordem" aria-label="Ordenar"><option value="">Mais recentes</option><option value="menor">Menor preço</option><option value="maior">Maior preço</option></select>
         ${tamanhos.length > 1 ? `<select id="f-tamanho" aria-label="Tamanho"><option value="">Todos os tamanhos</option>${tamanhos.map((t) => `<option>${esc(t)}</option>`).join('')}</select>` : ''}
       </div>
     </div>
-    <div class="grade" id="grade">${camisas.map((c) => cartao(c, fotos[c.id] || [])).join('')}</div>
+    <div class="grade" id="grade">${camisas.map((c, i) => cartao(c, fotos[c.id] || [], i)).join('')}</div>
     <p class="nada" id="nada" hidden>Nenhuma camisa com esses filtros.</p>`
     : `<p class="nada">As primeiras camisas chegam em breve.</p>`}
   </div></section>
@@ -154,6 +167,46 @@ async function inicio(env, origem) {
       </form>
     </div>
   </div></section>` : ''}
+  <section class="guardada" id="guardada"><div class="faixa">
+    <div class="guardada-caixa">
+      <div class="guardada-texto">
+        <h2>Tem uma camisa guardada?</h2>
+        <p>Venda ou troque com a gente. Manda as fotos e os detalhes, a gente avalia e te chama no WhatsApp.</p>
+      </div>
+      <form id="f-guardada" novalidate data-whats="${esc(String(env.WHATSAPP || '').replace(/\D/g, ''))}">
+        <input type="text" name="site" tabindex="-1" autocomplete="off" class="pote" aria-hidden="true">
+        <div class="procuro-duas">
+          <label><span>Seu nome</span><input name="nome" required autocomplete="name"></label>
+          <label><span>Seu WhatsApp</span><input name="whatsapp" required inputmode="tel" autocomplete="tel" placeholder="(31) 99999-9999"></label>
+        </div>
+        <div class="procuro-duas">
+          <label><span>Clube ou seleção</span><input name="clube" required autocomplete="off"></label>
+          <label><span>Ano / temporada</span><input name="temporada" autocomplete="off" placeholder="Ex.: 1994"></label>
+        </div>
+        <div class="procuro-duas">
+          <label><span>Tamanho</span><input name="tamanho" autocomplete="off"></label>
+          <label><span>Estado</span><select name="conservacao"><option value="">—</option>${CONSERVACAO.map((x) => `<option value="${x.v}">${esc(x.l)}</option>`).join('')}</select></label>
+        </div>
+        <div class="escolha-intencao" role="radiogroup" aria-label="O que você quer">
+          <label><input type="radio" name="intencao" value="vender" checked><span>Vender</span></label>
+          <label><input type="radio" name="intencao" value="trocar"><span>Trocar</span></label>
+          <label><input type="radio" name="intencao" value="tanto_faz"><span>Tanto faz</span></label>
+        </div>
+        <label><span>Quanto quer por ela <em>opcional</em></span><input name="preco" inputmode="decimal" placeholder="R$"></label>
+        <label><span>Conta a história dela <em>opcional</em></span><textarea name="mensagem" rows="3" placeholder="De onde veio, se tem etiqueta, defeitos…"></textarea></label>
+        <label class="fotos-campo"><span>Fotos (até 5): frente, costas e etiqueta</span>
+          <input type="file" name="fotos" accept="image/*" multiple></label>
+        <div class="fotos-previa" id="g-previa"></div>
+        <p class="g-erro" id="g-erro" hidden></p>
+        <button type="submit" class="btn-comprar" id="g-enviar">Enviar camisa</button>
+      </form>
+      <div class="guardada-ok" id="g-ok" hidden>
+        <h3>Recebemos sua camisa!</h3>
+        <p>Pra agilizar, avisa a gente no WhatsApp. As fotos vão junto no link.</p>
+        <a class="btn-comprar" id="g-whats" href="#" target="_blank" rel="noopener" data-origem="guardada">Avisar no WhatsApp</a>
+      </div>
+    </div>
+  </div></section>
   <script>
   (function(){
     var g=document.getElementById('grade'); if(!g) return;
@@ -170,6 +223,19 @@ async function inicio(env, origem) {
       });
       nada.hidden=n>0;
     }
+    var o=document.getElementById('f-ordem');
+    function ordenar(){
+      var v=o.value, lista=cards.slice();
+      lista.sort(function(x,y){
+        if(!v) return x.dataset.i-y.dataset.i;
+        var px=x.dataset.preco, py=y.dataset.preco;
+        if(px===''&&py==='') return x.dataset.i-y.dataset.i;
+        if(px==='') return 1; if(py==='') return -1;
+        return v==='menor'? px-py : py-px;
+      });
+      lista.forEach(function(c){ g.appendChild(c); });
+    }
+    o.addEventListener('input',ordenar);
     [b,s,d,t].forEach(function(el){ if(el) el.addEventListener('input',f); });
     f();
   })();
@@ -182,7 +248,54 @@ async function inicio(env, origem) {
       if(v('ano')) partes.push('• Ano: '+v('ano'));
       if(v('tamanho')) partes.push('• Tamanho: '+v('tamanho'));
       if(v('obs')) partes.push('• Detalhes: '+v('obs'));
+      if(window.gtag) gtag('event','generate_lead',{method:'whatsapp',origem:'procuro',transport_type:'beacon'});
       location.href='https://wa.me/'+p.dataset.whats+'?text='+encodeURIComponent(partes.join('\\n'));
+    });
+  })();
+  (function(){
+    var f=document.getElementById('f-guardada'); if(!f) return;
+    var arquivos=[], previa=document.getElementById('g-previa'), erro=document.getElementById('g-erro'), btn=document.getElementById('g-enviar');
+    function reduzir(file,max,q){
+      return new Promise(function(ok,falha){
+        var url=URL.createObjectURL(file), img=new Image();
+        img.onload=function(){
+          var k=Math.min(1,max/Math.max(img.naturalWidth,img.naturalHeight)), c=document.createElement('canvas');
+          c.width=Math.round(img.naturalWidth*k); c.height=Math.round(img.naturalHeight*k);
+          c.getContext('2d').drawImage(img,0,0,c.width,c.height); URL.revokeObjectURL(url);
+          c.toBlob(function(b){ b?ok(b):falha(new Error('foto')); },'image/jpeg',q);
+        };
+        img.onerror=function(){ URL.revokeObjectURL(url); falha(new Error('foto')); };
+        img.src=url;
+      });
+    }
+    f.fotos.addEventListener('change',function(){
+      arquivos=[].slice.call(f.fotos.files,0,5);
+      previa.innerHTML=arquivos.map(function(a){ return '<img src="'+URL.createObjectURL(a)+'" alt="">'; }).join('');
+    });
+    function falhou(m){ erro.textContent=m; erro.hidden=false; btn.disabled=false; btn.textContent='Enviar camisa'; }
+    f.addEventListener('submit',function(e){
+      e.preventDefault(); erro.hidden=true;
+      var zap=(f.whatsapp.value||'').replace(/[^0-9]/g,'');
+      if(!f.nome.value.trim()) return falhou('Preencha seu nome.');
+      if(zap.length<10) return falhou('Confira seu WhatsApp com DDD.');
+      if(!f.clube.value.trim()) return falhou('Qual é o clube ou seleção?');
+      if(!arquivos.length) return falhou('Manda pelo menos uma foto da camisa.');
+      btn.disabled=true; btn.textContent='Enviando…';
+      var fd=new FormData(f); fd.delete('fotos');
+      Promise.all(arquivos.map(function(a){ return Promise.all([reduzir(a,1400,.82),reduzir(a,420,.75)]); }))
+        .then(function(pares){
+          pares.forEach(function(p,i){ fd.append('full'+i,p[0],'f'+i+'.jpg'); fd.append('thumb'+i,p[1],'t'+i+'.jpg'); });
+          return fetch('/oferta',{method:'POST',body:fd});
+        })
+        .then(function(r){ return r.json().then(function(d){ if(!r.ok) throw new Error(d.erro||'Não deu pra enviar.'); return d; }); })
+        .then(function(d){
+          if(window.gtag) gtag('event','generate_lead',{method:'formulario',origem:'tem-camisa-guardada'});
+          var txt='Oi! Mandei pelo site uma camisa '+f.clube.value.trim()+(f.temporada.value.trim()?' '+f.temporada.value.trim():'')+' pra '+({vender:'vender',trocar:'trocar',tanto_faz:'vender ou trocar'})[f.intencao.value]+'. Fotos: '+location.origin+'/oferta/'+d.id;
+          document.getElementById('g-whats').href='https://wa.me/'+(f.dataset.whats||'')+'?text='+encodeURIComponent(txt);
+          f.hidden=true; document.getElementById('g-ok').hidden=false;
+          document.getElementById('guardada').scrollIntoView({behavior:'smooth',block:'start'});
+        })
+        .catch(function(err){ falhou(err.message==='foto'?'Uma das fotos não abriu. Tente outra.':err.message); });
     });
   })();
   </script>`;
@@ -226,8 +339,8 @@ async function camisa(env, origem, numero) {
         <p class="produto-sub">${esc([rotulo(MODELOS, c.modelo), c.marca, c.tamanho && `Tamanho ${c.tamanho}`].filter(Boolean).join(' · '))}</p>
         <p class="produto-preco ${c.status}">${esc(precoTxt(c))}${c.status === 'reservada' ? ' <small>· reservada</small>' : ''}</p>
         ${ehExemplo(c) ? '<p class="aviso exemplo">Camisa de exemplo, pra mostrar como a loja vai ficar. As camisas de verdade chegam em breve.</p>' : ''}
-        ${disponivel(c) && whats ? `<a class="btn-comprar" href="${esc(whats)}" target="_blank" rel="noopener">Quero essa camisa</a>` : ''}
-        ${c.status === 'reservada' && whats ? `<a class="btn-sec" href="${esc(whats)}" target="_blank" rel="noopener">Avise-me se liberar</a>` : ''}
+        ${disponivel(c) && whats ? `<a class="btn-comprar" data-origem="quero-essa" data-camisa="${c.numero}" data-valor="${c.preco_pedido ?? ''}" href="${esc(whats)}" target="_blank" rel="noopener">Quero essa camisa</a>` : ''}
+        ${c.status === 'reservada' && whats ? `<a class="btn-sec" data-origem="avise-me" data-camisa="${c.numero}" href="${esc(whats)}" target="_blank" rel="noopener">Avise-me se liberar</a>` : ''}
         ${!ehExemplo(c) && c.status === 'vendida' ? '<p class="aviso">Essa já foi pra coleção de alguém. Veja as disponíveis ou peça uma parecida.</p>' : ''}
         <button class="btn-sec" type="button" id="compartilhar">Compartilhar</button>
         <dl class="ficha">${ficha.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl>
@@ -236,6 +349,7 @@ async function camisa(env, origem, numero) {
     </div>
   </div></article>
   <script>
+  if(window.gtag) gtag('event','view_item',{currency:'BRL',value:${c.preco_pedido ?? 0},items:[{item_id:'${c.numero}',item_name:${JSON.stringify(titulo(c)).replace(/</g, '\\u003c')},item_category:'${esc(c.status)}'}]});
   (function(){
     var g=document.getElementById('galeria');
     document.querySelectorAll('.miniaturas button').forEach(function(b){
@@ -273,6 +387,76 @@ async function sitemap(env, origem) {
   return new Response(`<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls.join('')}</urlset>`, { headers: { 'content-type': 'application/xml' } });
 }
 
+
+// ---------- "Tem uma camisa guardada?" ----------
+const INTENCOES = ['vender', 'trocar', 'tanto_faz'];
+const ehJpeg = (buf) => { const b = new Uint8Array(buf, 0, 3); return b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff; };
+const json = (d, status = 200) => new Response(JSON.stringify(d), { status, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' } });
+
+async function receberOferta(request, env) {
+  let fd;
+  try { fd = await request.formData(); } catch { return json({ erro: 'Envio inválido.' }, 400); }
+  if (String(fd.get('site') || '').trim()) return json({ id: crypto.randomUUID() }); // robô caiu no pote
+  const txt = (k, max) => String(fd.get(k) || '').trim().slice(0, max) || null;
+  const nome = txt('nome', 80), clube = txt('clube', 80);
+  const whatsapp = String(fd.get('whatsapp') || '').replace(/\D/g, '').slice(0, 13);
+  if (!nome || !clube || whatsapp.length < 10) return json({ erro: 'Preencha nome, WhatsApp e clube.' }, 400);
+  const intencao = INTENCOES.includes(fd.get('intencao')) ? fd.get('intencao') : 'vender';
+  const precoTxt = String(fd.get('preco') || '').replace(/[^\d,.]/g, '').replace(/\.(?=\d{3}\b)/g, '').replace(',', '.');
+  const preco = precoTxt && Number.isFinite(Number(precoTxt)) ? Number(precoTxt) : null;
+
+  // limite simples: 5 envios por IP por dia
+  const ip = request.headers.get('cf-connecting-ip') || 'x';
+  const chaveLim = `lim:${ip}:${new Date().toISOString().slice(0, 10)}`;
+  const usados = Number(await env.FOTOS.get(chaveLim)) || 0;
+  if (usados >= 5) return json({ erro: 'Muitos envios hoje. Fala direto com a gente no WhatsApp.' }, 429);
+
+  const fotos = [];
+  for (let i = 0; i < 5; i++) {
+    const full = fd.get(`full${i}`);
+    if (!full || typeof full === 'string') break;
+    const thumb = fd.get(`thumb${i}`);
+    const bf = await full.arrayBuffer();
+    if (bf.byteLength > 3 * 1024 * 1024 || !ehJpeg(bf)) return json({ erro: 'Uma das fotos é grande demais ou não é imagem.' }, 400);
+    const bt = thumb && typeof thumb !== 'string' ? await thumb.arrayBuffer() : null;
+    fotos.push([bf, bt && bt.byteLength < 600 * 1024 && ehJpeg(bt) ? bt : null]);
+  }
+  if (!fotos.length) return json({ erro: 'Manda pelo menos uma foto.' }, 400);
+
+  const id = crypto.randomUUID();
+  await Promise.all(fotos.flatMap(([bf, bt], n) => [env.FOTOS.put(`o:${id}:${n}`, bf), bt ? env.FOTOS.put(`ot:${id}:${n}`, bt) : null].filter(Boolean)));
+  const t = new Date().toISOString();
+  const cons = ['nova', 'excelente', 'muito_boa', 'boa', 'regular', 'ruim'].includes(fd.get('conservacao')) ? fd.get('conservacao') : null;
+  await env.DB.prepare(`INSERT INTO ofertas (id, nome, whatsapp, cidade, clube, temporada, tamanho, conservacao, intencao, preco_desejado, mensagem, fotos, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+    .bind(id, nome, whatsapp, txt('cidade', 80), clube, txt('temporada', 20), txt('tamanho', 12), cons, intencao, preco, txt('mensagem', 1000), fotos.length, t, t).run();
+  await env.FOTOS.put(chaveLim, String(usados + 1), { expirationTtl: 86400 });
+  return json({ id });
+}
+
+// Página pública da oferta (só fotos e dados da camisa, nunca nome/telefone) — vira prévia com foto no WhatsApp.
+async function paginaOferta(env, origem, id) {
+  const o = await env.DB.prepare('SELECT id, clube, temporada, tamanho, conservacao, intencao, fotos FROM ofertas WHERE id = ?').bind(id).first();
+  if (!o) return null;
+  const tit = [o.clube, o.temporada].filter(Boolean).join(' ');
+  const intencao = { vender: 'pra vender', trocar: 'pra trocar', tanto_faz: 'pra vender ou trocar' }[o.intencao];
+  const corpo = `<section class="vitrine"><div class="faixa">
+    <p class="codigo">Camisa oferecida ${esc(intencao)}</p>
+    <h1 class="oferta-tit">${esc(tit)}</h1>
+    <p class="produto-sub">${esc([o.tamanho && `Tamanho ${o.tamanho}`, rotulo(CONSERVACAO, o.conservacao)].filter(Boolean).join(' · '))}</p>
+    <div class="oferta-fotos">${Array.from({ length: o.fotos }, (_, n) => `<a href="/oferta/${o.id}/foto/${n}" target="_blank" rel="noopener"><img src="/oferta/${o.id}/foto/${n}" alt="Foto ${n + 1}" loading="lazy"></a>`).join('')}</div>
+  </div></section>`;
+  return pagina(env, {
+    tituloPag: `${tit} · oferta recebida · Camisa XX`, descricao: `Camisa ${tit} oferecida ${intencao} pela Camisa XX.`,
+    url: `${origem}/oferta/${o.id}`, imagem: o.fotos ? `${origem}/oferta/${o.id}/foto/0` : `${origem}/icons/logo-560.jpg`, corpo, classe: 'pag-oferta',
+  }).replace('<head>', '<head>\n<meta name="robots" content="noindex">');
+}
+async function fotoDaOferta(env, id, n) {
+  const corpo = await env.FOTOS.get(`o:${id}:${n}`, { type: 'stream' });
+  if (!corpo) return new Response('Foto não encontrada', { status: 404 });
+  return new Response(corpo, { headers: { 'content-type': 'image/jpeg', 'cache-control': 'public, max-age=86400' } });
+}
+
 const html = (corpo, status = 200) => new Response(corpo, { status, headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'public, max-age=60' } });
 
 export async function onRequest(ctx) {
@@ -280,6 +464,9 @@ export async function onRequest(ctx) {
   const url = new URL(request.url);
   const p = url.pathname;
   if (p.startsWith('/css/') || p.startsWith('/icons/')) return ctx.next();
+  if (p === '/oferta' && request.method === 'POST') {
+    try { return await receberOferta(request, env); } catch (e) { return json({ erro: 'Não deu pra enviar agora. Tente de novo.' }, 500); }
+  }
   if (request.method !== 'GET' && request.method !== 'HEAD') return new Response('Método não permitido', { status: 405 });
   const origem = url.origin;
   try {
@@ -291,6 +478,10 @@ export async function onRequest(ctx) {
     }
     m = p.match(/^\/foto\/([\w-]+)$/);
     if (m) return foto(env, m[1], url.searchParams.has('t'));
+    m = p.match(/^\/oferta\/([\w-]+)\/foto\/(\d)$/);
+    if (m) return fotoDaOferta(env, m[1], Number(m[2]));
+    m = p.match(/^\/oferta\/([\w-]+)\/?$/);
+    if (m) { const r = await paginaOferta(env, origem, m[1]); if (r) return html(r); }
     if (p === '/sitemap.xml') return sitemap(env, origem);
     if (p === '/robots.txt') return new Response(`User-agent: *\nAllow: /\nSitemap: ${origem}/sitemap.xml\n`, { headers: { 'content-type': 'text/plain' } });
     return html(pagina(env, {

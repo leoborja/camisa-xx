@@ -19,7 +19,7 @@ const CAMPOS = [
   'conservacao', 'defeitos',
   'data_compra', 'valor_compra', 'custos_extras', 'origem',
   'status', 'preco_pedido', 'data_venda', 'valor_venda', 'canal_venda', 'comprador',
-  'observacoes', 'publicada',
+  'observacoes', 'publicada', 'fornecedor_id', 'comprador_id',
 ];
 const NUMEROS = new Set(['ano', 'valor_compra', 'custos_extras', 'preco_pedido', 'valor_venda']);
 const BOOLEANOS = new Set(['certificado', 'publicada']);
@@ -111,7 +111,18 @@ async function obter(env, id) {
   const c = await env.DB.prepare('SELECT * FROM camisas WHERE id = ?').bind(id).first();
   if (!c) return erro('Camisa não encontrada.', 404);
   const { results } = await env.DB.prepare('SELECT id, camisa_id, ordem FROM fotos WHERE camisa_id = ? ORDER BY ordem').bind(id).all();
-  return json(saida(c, results));
+  const extra = {};
+  const nomeDe = async (cid) => (cid ? (await env.DB.prepare('SELECT id, nome, whatsapp FROM contatos WHERE id = ?').bind(cid).first()) : null);
+  extra.fornecedor = await nomeDe(c.fornecedor_id);
+  extra.comprador_contato = await nomeDe(c.comprador_id);
+  for (const [campo, chave] of [['troca_entrada_id', 'troca_entrada'], ['troca_saida_id', 'troca_saida']]) {
+    if (!c[campo]) continue;
+    const t = await env.DB.prepare('SELECT * FROM trocas WHERE id = ?').bind(c[campo]).first();
+    if (!t) continue;
+    const { results: outras } = await env.DB.prepare('SELECT id, numero, clube, temporada, valor_compra, valor_venda, troca_entrada_id, troca_saida_id FROM camisas WHERE (troca_entrada_id = ?1 OR troca_saida_id = ?1) AND id <> ?2').bind(t.id, c.id).all();
+    extra[chave] = { ...t, contato: await nomeDe(t.contato_id), outras };
+  }
+  return json({ ...saida(c, results), ...extra });
 }
 
 async function criar(env, corpo) {
@@ -204,6 +215,202 @@ async function autorizado(request, env) {
   return false;
 }
 
+
+// ---------- contatos (clientes e fornecedores) ----------
+const CAMPOS_CONTATO = ['nome', 'whatsapp', 'instagram', 'cidade', 'tipo', 'interesses', 'observacoes'];
+const soDigitos = (v) => String(v || '').replace(/\D/g, '') || null;
+const normaliza = (v) => String(v || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+const anoDe = (t) => { const m = String(t || '').match(/(19|20)\d{2}/); return m ? Number(m[0]) : null; };
+
+function limparContato(corpo) {
+  const l = {};
+  for (const k of CAMPOS_CONTATO) {
+    if (!(k in corpo)) continue;
+    let v = corpo[k] == null || corpo[k] === '' ? null : String(corpo[k]).trim().slice(0, 2000) || null;
+    if (k === 'whatsapp') v = soDigitos(v);
+    if (k === 'instagram' && v) v = v.replace(/^https?:\/\/(www\.)?instagram\.com\//i, '').replace(/^@/, '').replace(/[/?#].*$/, '') || null;
+    if (k === 'tipo' && !['cliente', 'fornecedor', 'ambos'].includes(v)) v = 'cliente';
+    l[k] = v;
+  }
+  return l;
+}
+function insertContato(env, id, l, t) {
+  const cols = Object.keys(l);
+  return env.DB.prepare(`INSERT INTO contatos (id, created_at, updated_at${cols.map((k) => `, ${k}`).join('')}) VALUES (?, ?, ?${cols.map(() => ', ?').join('')})`)
+    .bind(id, t, t, ...cols.map((k) => l[k]));
+}
+
+async function listarContatos(env) {
+  const { results } = await env.DB.prepare(`SELECT c.*,
+      (SELECT COUNT(*) FROM camisas WHERE comprador_id = c.id) AS compras,
+      (SELECT COUNT(*) FROM camisas WHERE fornecedor_id = c.id) AS fornecidas,
+      (SELECT COUNT(*) FROM trocas WHERE contato_id = c.id) AS trocas
+    FROM contatos c ORDER BY c.nome COLLATE NOCASE`).all();
+  return json(results);
+}
+async function obterContato(env, id) {
+  const c = await env.DB.prepare('SELECT * FROM contatos WHERE id = ?').bind(id).first();
+  if (!c) return erro('Contato não encontrado.', 404);
+  const { results: camisas } = await env.DB.prepare(`SELECT id, numero, clube, temporada, status, valor_venda, valor_compra, data_venda, data_compra,
+      comprador_id, fornecedor_id, troca_entrada_id, troca_saida_id
+    FROM camisas WHERE comprador_id = ?1 OR fornecedor_id = ?1 ORDER BY COALESCE(data_venda, data_compra, created_at) DESC`).bind(id).all();
+  const { results: trocas } = await env.DB.prepare('SELECT * FROM trocas WHERE contato_id = ? ORDER BY data DESC').bind(id).all();
+  return json({ ...c, camisas, trocas });
+}
+async function criarContato(env, corpo) {
+  const l = limparContato(corpo);
+  if (!l.nome) return erro('Preencha o nome.');
+  const id = crypto.randomUUID();
+  await insertContato(env, id, l, agora()).run();
+  return obterContato(env, id);
+}
+async function atualizarContato(env, id, corpo) {
+  const l = limparContato(corpo);
+  if ('nome' in l && !l.nome) return erro('Preencha o nome.');
+  const cols = Object.keys(l);
+  if (cols.length) {
+    const r = await env.DB.prepare(`UPDATE contatos SET ${cols.map((k) => `${k} = ?`).join(', ')}, updated_at = ? WHERE id = ?`).bind(...cols.map((k) => l[k]), agora(), id).run();
+    if (!r.meta.changes) return erro('Contato não encontrado.', 404);
+  }
+  return obterContato(env, id);
+}
+async function excluirContato(env, id) {
+  await env.DB.batch([
+    env.DB.prepare('UPDATE camisas SET comprador_id = NULL WHERE comprador_id = ?').bind(id),
+    env.DB.prepare('UPDATE camisas SET fornecedor_id = NULL WHERE fornecedor_id = ?').bind(id),
+    env.DB.prepare('UPDATE trocas SET contato_id = NULL WHERE contato_id = ?').bind(id),
+    env.DB.prepare('DELETE FROM contatos WHERE id = ?').bind(id),
+  ]);
+  return json({ ok: true });
+}
+
+// Quem pode querer esta camisa: curte o clube (campo interesses) ou já levou camisa do mesmo clube.
+async function interessados(env, camisaId) {
+  const c = await env.DB.prepare('SELECT clube FROM camisas WHERE id = ?').bind(camisaId).first();
+  if (!c) return erro('Camisa não encontrada.', 404);
+  const alvo = normaliza(c.clube);
+  const { results } = await env.DB.prepare(`SELECT ct.id, ct.nome, ct.whatsapp, ct.interesses,
+      (SELECT GROUP_CONCAT(cm.clube, '|') FROM camisas cm WHERE cm.comprador_id = ct.id) AS levou
+    FROM contatos ct WHERE ct.whatsapp IS NOT NULL`).all();
+  const lista = [];
+  for (const ct of results) {
+    const motivos = [];
+    if (ct.interesses && normaliza(ct.interesses).includes(alvo)) motivos.push(`curte ${c.clube}`);
+    if ((ct.levou || '').split('|').some((x) => normaliza(x) === alvo)) motivos.push(`já levou ${c.clube}`);
+    if (motivos.length) lista.push({ id: ct.id, nome: ct.nome, whatsapp: ct.whatsapp, motivos });
+  }
+  return json(lista);
+}
+
+// ---------- trocas ----------
+// saidas: [{id, valor}] (camisas dele que saem) · entradas: [{clube, temporada, tamanho, modelo, valor}] (que chegam)
+// dinheiro > 0 = ele pagou a diferença; < 0 = ele recebeu.
+async function registrarTroca(env, corpo) {
+  const saidas = Array.isArray(corpo.saidas) ? corpo.saidas.slice(0, 20) : [];
+  const entradas = Array.isArray(corpo.entradas) ? corpo.entradas.slice(0, 20) : [];
+  if (!saidas.length || !entradas.length) return erro('Uma troca precisa de pelo menos uma camisa saindo e uma entrando.');
+  if (entradas.some((e) => !String(e.clube || '').trim())) return erro('Toda camisa que entra precisa do clube.');
+  const data = /^\d{4}-\d{2}-\d{2}$/.test(corpo.data || '') ? corpo.data : agora().slice(0, 10);
+  const t = agora();
+  const stmts = [];
+  let contatoId = corpo.contato_id || null;
+  let nomeContato = null;
+  if (contatoId) {
+    nomeContato = (await env.DB.prepare('SELECT nome FROM contatos WHERE id = ?').bind(contatoId).first())?.nome || null;
+    if (!nomeContato) contatoId = null;
+  } else if (corpo.contato_novo?.nome) {
+    contatoId = crypto.randomUUID();
+    const l = limparContato({ ...corpo.contato_novo, tipo: 'ambos' });
+    nomeContato = l.nome;
+    stmts.push(insertContato(env, contatoId, l, t));
+  }
+  const trocaId = crypto.randomUUID();
+  const dinheiro = Number(corpo.dinheiro) || 0;
+  stmts.push(env.DB.prepare('INSERT INTO trocas (id, data, contato_id, dinheiro, observacoes, created_at) VALUES (?, ?, ?, ?, ?, ?)')
+    .bind(trocaId, data, contatoId, dinheiro, String(corpo.observacoes || '').trim().slice(0, 2000) || null, t));
+  for (const sd of saidas) {
+    const v = Number(sd.valor);
+    stmts.push(env.DB.prepare(`UPDATE camisas SET status = 'vendida', valor_venda = ?, data_venda = ?, canal_venda = 'Troca',
+        comprador = ?, comprador_id = ?, troca_saida_id = ?, updated_at = ? WHERE id = ?`)
+      .bind(Number.isFinite(v) ? v : null, data, nomeContato, contatoId, trocaId, t, String(sd.id)));
+  }
+  const novas = [];
+  for (const e of entradas) {
+    const l = limpar({
+      clube: e.clube, temporada: e.temporada, tamanho: e.tamanho, modelo: e.modelo || null, ano: anoDe(e.temporada),
+      valor_compra: e.valor, data_compra: data, origem: nomeContato ? `Troca com ${nomeContato}` : 'Troca', status: 'estoque', publicada: false,
+    });
+    const id = crypto.randomUUID();
+    novas.push(id);
+    const cols = Object.keys(l);
+    stmts.push(env.DB.prepare(`INSERT INTO camisas (id, numero, created_at, updated_at, fornecedor_id, troca_entrada_id${cols.map((k) => `, ${k}`).join('')})
+      VALUES (?, (SELECT COALESCE(MAX(numero), 0) + 1 FROM camisas WHERE owner_id = 'dono'), ?, ?, ?, ?${cols.map(() => ', ?').join('')})`)
+      .bind(id, t, t, contatoId, trocaId, ...cols.map((k) => l[k])));
+  }
+  await env.DB.batch(stmts);
+  return json({ id: trocaId, entradas: novas, contato_id: contatoId });
+}
+
+// ---------- ofertas recebidas pela loja ----------
+async function listarOfertas(env) {
+  const { results } = await env.DB.prepare(`SELECT * FROM ofertas ORDER BY CASE status WHEN 'nova' THEN 0 WHEN 'em_conversa' THEN 1 ELSE 2 END, created_at DESC`).all();
+  return json(results);
+}
+async function obterOferta(env, id) {
+  const o = await env.DB.prepare('SELECT * FROM ofertas WHERE id = ?').bind(id).first();
+  return o ? json(o) : erro('Oferta não encontrada.', 404);
+}
+async function atualizarOferta(env, id, corpo) {
+  if (!['nova', 'em_conversa', 'aceita', 'recusada'].includes(corpo.status)) return erro('Status inválido.');
+  await env.DB.prepare('UPDATE ofertas SET status = ?, updated_at = ? WHERE id = ?').bind(corpo.status, agora(), id).run();
+  return obterOferta(env, id);
+}
+async function excluirOferta(env, id) {
+  const o = await env.DB.prepare('SELECT fotos FROM ofertas WHERE id = ?').bind(id).first();
+  if (o) await Promise.all(Array.from({ length: o.fotos }, (_, n) => [env.FOTOS.delete(`o:${id}:${n}`), env.FOTOS.delete(`ot:${id}:${n}`)]).flat());
+  await env.DB.prepare('DELETE FROM ofertas WHERE id = ?').bind(id).run();
+  return json({ ok: true });
+}
+async function fotoOferta(env, id, n, mini) {
+  let corpo = mini ? await env.FOTOS.get(`ot:${id}:${n}`, { type: 'stream' }) : null;
+  if (!corpo) corpo = await env.FOTOS.get(`o:${id}:${n}`, { type: 'stream' });
+  if (!corpo) return new Response('Foto não encontrada', { status: 404 });
+  return new Response(corpo, { headers: { 'content-type': 'image/jpeg', 'cache-control': 'private, max-age=86400' } });
+}
+// Aceitar: vira contato (fornecedor) + camisa no acervo (fora da loja), com as fotos copiadas.
+async function aceitarOferta(env, id) {
+  const o = await env.DB.prepare('SELECT * FROM ofertas WHERE id = ?').bind(id).first();
+  if (!o) return erro('Oferta não encontrada.', 404);
+  if (o.camisa_id) return json({ camisa_id: o.camisa_id, contato_id: o.contato_id });
+  const t = agora();
+  let contato = await env.DB.prepare('SELECT id FROM contatos WHERE whatsapp = ?').bind(o.whatsapp).first();
+  const stmts = [];
+  if (!contato) {
+    contato = { id: crypto.randomUUID() };
+    stmts.push(insertContato(env, contato.id, limparContato({ nome: o.nome, whatsapp: o.whatsapp, cidade: o.cidade, tipo: 'fornecedor' }), t));
+  }
+  const camisaId = crypto.randomUUID();
+  const cons = ['nova', 'excelente', 'muito_boa', 'boa', 'regular', 'ruim'].includes(o.conservacao) ? o.conservacao : null;
+  const l = limpar({ clube: o.clube, temporada: o.temporada, ano: anoDe(o.temporada), tamanho: o.tamanho, conservacao: cons,
+    origem: `Oferta pelo site (${o.nome})`, status: 'estoque', publicada: false, observacoes: o.mensagem });
+  const cols = Object.keys(l);
+  stmts.push(env.DB.prepare(`INSERT INTO camisas (id, numero, created_at, updated_at, fornecedor_id${cols.map((k) => `, ${k}`).join('')})
+    VALUES (?, (SELECT COALESCE(MAX(numero), 0) + 1 FROM camisas WHERE owner_id = 'dono'), ?, ?, ?${cols.map(() => ', ?').join('')})`)
+    .bind(camisaId, t, t, contato.id, ...cols.map((k) => l[k])));
+  for (let n = 0; n < o.fotos; n++) {
+    const full = await env.FOTOS.get(`o:${id}:${n}`, { type: 'arrayBuffer' });
+    if (!full) continue;
+    const thumb = await env.FOTOS.get(`ot:${id}:${n}`, { type: 'arrayBuffer' });
+    const fid = crypto.randomUUID();
+    await env.FOTOS.put(`f:${fid}`, full);
+    if (thumb) await env.FOTOS.put(`t:${fid}`, thumb);
+    stmts.push(env.DB.prepare('INSERT INTO fotos (id, camisa_id, ordem, created_at) VALUES (?, ?, ?, ?)').bind(fid, camisaId, n, t));
+  }
+  stmts.push(env.DB.prepare(`UPDATE ofertas SET status = 'aceita', contato_id = ?, camisa_id = ?, updated_at = ? WHERE id = ?`).bind(contato.id, camisaId, t, id));
+  await env.DB.batch(stmts);
+  return json({ camisa_id: camisaId, contato_id: contato.id });
+}
+
 // ---------- roteador ----------
 export async function onRequest(contexto) {
   const origem = contexto.request.headers.get('origin') || '';
@@ -249,6 +456,24 @@ async function rotear({ request, env, params }) {
       if (b && c === 'fotos' && d === 'ordem' && metodo === 'PUT') return ordenarFotos(env, b, await corpoJson());
     }
     if (a === 'fotos' && b && metodo === 'DELETE') return removerFoto(env, b);
+
+    if (a === 'contatos') {
+      if (!b && metodo === 'GET') return listarContatos(env);
+      if (!b && metodo === 'POST') return criarContato(env, await corpoJson());
+      if (b && metodo === 'GET') return obterContato(env, b);
+      if (b && metodo === 'PUT') return atualizarContato(env, b, await corpoJson());
+      if (b && metodo === 'DELETE') return excluirContato(env, b);
+    }
+    if (a === 'interessados' && b && metodo === 'GET') return interessados(env, b);
+    if (a === 'trocas' && !b && metodo === 'POST') return registrarTroca(env, await corpoJson());
+    if (a === 'ofertas') {
+      if (!b && metodo === 'GET') return listarOfertas(env);
+      if (b && !c && metodo === 'GET') return obterOferta(env, b);
+      if (b && !c && metodo === 'PUT') return atualizarOferta(env, b, await corpoJson());
+      if (b && !c && metodo === 'DELETE') return excluirOferta(env, b);
+      if (b && c === 'aceitar' && metodo === 'POST') return aceitarOferta(env, b);
+      if (b && c === 'foto' && d !== undefined && metodo === 'GET') return fotoOferta(env, b, Number(d), new URL(request.url).searchParams.has('t'));
+    }
 
     return erro('Rota não encontrada.', 404);
   } catch (e) {

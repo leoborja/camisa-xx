@@ -12,6 +12,7 @@ export const ICONE = {
   maisOpcoes: svg('<circle cx="5" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="19" cy="12" r="1.2"/>', 'stroke-width="2.4"'),
   busca: svg('<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>'),
   fechar: svg('<path d="M18 6 6 18M6 6l12 12"/>', 'stroke-width="2.2"'),
+  pessoas: svg('<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.6 3.2-5.5 6.5-5.5s5.9 1.9 6.5 5.5"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18 14.8c2 .7 3.2 2.4 3.5 5.2"/>'),
   check: svg('<path d="M20 6 9 17l-5-5"/>', 'stroke-width="2.4"'),
 };
 

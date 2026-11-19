@@ -100,3 +100,17 @@ export async function confirmar(pergunta, { ok = 'Confirmar', perigo = false } =
   const r = await acoes(pergunta, [{ valor: true, rotulo: ok, perigo }]);
   return r === true;
 }
+
+// WhatsApp: guarda só dígitos; link wa.me com DDI 55 quando faltar
+export function linkWhats(numero, texto = '') {
+  let d = String(numero || '').replace(/\D/g, '');
+  if (!d) return null;
+  if (d.length <= 11) d = `55${d}`;
+  return `https://wa.me/${d}${texto ? `?text=${encodeURIComponent(texto)}` : ''}`;
+}
+export function fmtWhats(numero) {
+  const d = String(numero || '').replace(/\D/g, '').replace(/^55(?=\d{10,11}$)/, '');
+  if (d.length === 11) return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
+  if (d.length === 10) return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`;
+  return d;
+}

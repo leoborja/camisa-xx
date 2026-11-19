@@ -63,5 +63,25 @@ export async function criarStoreCloudflare({ base = '', senha = null } = {}) {
     },
     async removerFoto(foto) { await api(`/fotos/${encodeURIComponent(foto.id)}`, { metodo: 'DELETE' }); },
     async ordenarFotos(camisaId, ids) { await api(`/camisas/${encodeURIComponent(camisaId)}/fotos/ordem`, { metodo: 'PUT', corpo: { ids } }); },
+
+    // contatos
+    temContatos: true,
+    async contatos() { return api('/contatos'); },
+    async obterContato(id) { return api(`/contatos/${encodeURIComponent(id)}`); },
+    async salvarContato(dados) {
+      const { id, camisas, trocas, compras, fornecidas, created_at, updated_at, owner_id, ...campos } = dados;
+      return id ? api(`/contatos/${encodeURIComponent(id)}`, { metodo: 'PUT', corpo: campos }) : api('/contatos', { metodo: 'POST', corpo: campos });
+    },
+    async excluirContato(id) { await api(`/contatos/${encodeURIComponent(id)}`, { metodo: 'DELETE' }); },
+    async interessados(camisaId) { return api(`/interessados/${encodeURIComponent(camisaId)}`); },
+    // trocas
+    async registrarTroca(dados) { return api('/trocas', { metodo: 'POST', corpo: dados }); },
+    // ofertas recebidas pela loja
+    async ofertas() { return api('/ofertas'); },
+    async obterOferta(id) { return api(`/ofertas/${encodeURIComponent(id)}`); },
+    async statusOferta(id, status) { return api(`/ofertas/${encodeURIComponent(id)}`, { metodo: 'PUT', corpo: { status } }); },
+    async aceitarOferta(id) { return api(`/ofertas/${encodeURIComponent(id)}/aceitar`, { metodo: 'POST' }); },
+    async excluirOferta(id) { await api(`/ofertas/${encodeURIComponent(id)}`, { metodo: 'DELETE' }); },
+    fotoOferta(id, n, mini) { return `${base}/api/ofertas/${encodeURIComponent(id)}/foto/${n}${mini ? '?t=1' : ''}`; },
   };
 }

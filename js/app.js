@@ -10,6 +10,9 @@ import * as formulario from './views/formulario.js';
 import * as painel from './views/painel.js';
 import * as ajustes from './views/ajustes.js';
 import * as login from './views/login.js';
+import * as contatos from './views/contatos.js';
+import * as troca from './views/troca.js';
+import * as ofertas from './views/ofertas.js';
 
 const ROTAS = [
   [/^acervo$/, acervo],
@@ -18,6 +21,11 @@ const ROTAS = [
   [/^editar-([\w-]+)$/, formulario],
   [/^painel$/, painel],
   [/^ajustes$/, ajustes],
+  [/^contatos$/, contatos],
+  [/^contato-[\w-]+$/, contatos],
+  [/^troca(?:-[\w-]+)?$/, troca],
+  [/^ofertas$/, ofertas],
+  [/^oferta-[\w-]+$/, ofertas],
 ];
 
 const app = document.getElementById('app');
@@ -30,6 +38,7 @@ function montarTabbar() {
   document.getElementById('tabbar').innerHTML = `
     <a href="#acervo" data-tab="acervo">${ICONE.camisa}<span>Acervo</span></a>
     <a href="#nova" data-tab="nova" class="tab-nova"><span class="tab-nova-bola">${ICONE.mais}</span><span>Nova</span></a>
+    <a href="#contatos" data-tab="contatos">${ICONE.pessoas}<span>Contatos</span></a>
     <a href="#painel" data-tab="painel">${ICONE.grafico}<span>Painel</span></a>
     <a href="#ajustes" data-tab="ajustes">${ICONE.ajustes}<span>Ajustes</span></a>`;
 }
