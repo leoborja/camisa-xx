@@ -16,9 +16,12 @@ const brl = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL',
 const semAcento = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '');
 const titulo = (c) => [c.clube, c.temporada].filter(Boolean).join(' ');
 const disponivel = (c) => c.status === 'estoque' || c.status === 'anunciada';
+// Camisas de exemplo (pra mostrar a loja) ficam marcadas e sem botão de compra
+const ehExemplo = (c) => c.observacoes === 'Exemplo de demonstração';
 const precoTxt = (c) => (c.status === 'vendida' ? 'Vendida' : c.preco_pedido != null ? brl.format(c.preco_pedido) : 'Sob consulta');
 
 function seloStatus(c) {
+  if (ehExemplo(c)) return `<span class="selo exemplo">Exemplo${c.status === 'vendida' ? ' · vendida' : c.status === 'reservada' ? ' · reservada' : ''}</span>`;
   if (c.status === 'vendida') return '<span class="selo vendida">Vendida</span>';
   if (c.status === 'reservada') return '<span class="selo reservada">Reservada</span>';
   return '';
@@ -192,9 +195,10 @@ async function camisa(env, origem, numero) {
         <h1>${esc(c.clube)} <span>${esc(c.temporada || '')}</span></h1>
         <p class="produto-sub">${esc([rotulo(MODELOS, c.modelo), c.marca, c.tamanho && `Tamanho ${c.tamanho}`].filter(Boolean).join(' · '))}</p>
         <p class="produto-preco ${c.status}">${esc(precoTxt(c))}${c.status === 'reservada' ? ' <small>· reservada</small>' : ''}</p>
+        ${ehExemplo(c) ? '<p class="aviso exemplo">Camisa de exemplo, pra mostrar como a loja vai ficar. As camisas de verdade chegam em breve.</p>' : ''}
         ${disponivel(c) && whats ? `<a class="btn-comprar" href="${esc(whats)}" target="_blank" rel="noopener">Quero essa camisa</a>` : ''}
         ${c.status === 'reservada' && whats ? `<a class="btn-sec" href="${esc(whats)}" target="_blank" rel="noopener">Avise-me se liberar</a>` : ''}
-        ${c.status === 'vendida' ? '<p class="aviso">Essa já foi pra coleção de alguém. Veja as disponíveis ou peça uma parecida.</p>' : ''}
+        ${!ehExemplo(c) && c.status === 'vendida' ? '<p class="aviso">Essa já foi pra coleção de alguém. Veja as disponíveis ou peça uma parecida.</p>' : ''}
         <button class="btn-sec" type="button" id="compartilhar">Compartilhar</button>
         <dl class="ficha">${ficha.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl>
         ${c.observacoes && c.observacoes !== 'Exemplo de demonstração' ? `<p class="obs">${esc(c.observacoes)}</p>` : ''}

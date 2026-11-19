@@ -1,0 +1,4 @@
+-- Remove as 8 camisas de exemplo inseridas em 19/11/2026 (por id, nunca pelo texto).
+-- Rodar: npx wrangler d1 execute camisa-xx --remote --file cloudflare/remover-exemplos.sql
+DELETE FROM fotos WHERE camisa_id IN ('ff9ce23e-64ad-436e-8cbe-3a87d5a045ab', '8000a483-093b-4a82-ba1c-a6e9a8ef3290', '3ddb7ef1-4139-41cc-b278-54cb4ad5db31', '7e562da2-69f5-45ee-87a4-d15a9d7c85d6', 'e6c8578e-3a1b-4b03-8b36-d3d32aee8e8e', 'e669e2aa-cd0f-4a75-b403-f5fcc2a11515', '0513a590-c9a7-42e5-a65d-2f670262047a', 'c95fbb72-1193-4f25-9fb5-dc507e0ef161');
+DELETE FROM camisas WHERE id IN ('ff9ce23e-64ad-436e-8cbe-3a87d5a045ab', '8000a483-093b-4a82-ba1c-a6e9a8ef3290', '3ddb7ef1-4139-41cc-b278-54cb4ad5db31', '7e562da2-69f5-45ee-87a4-d15a9d7c85d6', 'e6c8578e-3a1b-4b03-8b36-d3d32aee8e8e', 'e669e2aa-cd0f-4a75-b403-f5fcc2a11515', '0513a590-c9a7-42e5-a65d-2f670262047a', 'c95fbb72-1193-4f25-9fb5-dc507e0ef161');
