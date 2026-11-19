@@ -1,27 +1,27 @@
 /* Camisa XX — acervo de camisas
-   Marca: logo 02 "número nas costas" — azul royal #1d3fa6 + branco.
+   Marca: carimbo "CAMISA XX · 1983" — carvão, verde-garrafa e creme. Nada de azul.
    Layout: coluna única de até 640px, pensada pro polegar no iPhone; barra de abas
    fixa embaixo, ações principais sempre no rodapé, cartões só onde separam assuntos.
    Tipo: números e títulos em fonte condensada de número de camisa; texto na fonte do sistema (iOS). */
 
 :root {
-  --bg: #eef0f6;          /* papel frio puxado pro azul da marca */
-  --surface: #ffffff;
-  --surface-2: #e2e6ef;
-  --ink: #121a2e;
-  --muted: #5d6579;
-  --line: #d5dae6;
-  --accent: #1d3fa6;      /* azul royal da camisa / logo */
-  --accent-ink: #ffffff;
-  --accent-soft: #dde4f7;
-  --pos: #12703d;
+  --bg: #f4eee2;          /* papel do carimbo */
+  --surface: #fffcf5;
+  --surface-2: #ebe3d2;
+  --ink: #1e1a17;         /* tinta carvão */
+  --muted: #6b6258;
+  --line: #ddd3bf;
+  --accent: #1f4632;      /* verde-garrafa da camisa listrada */
+  --accent-ink: #f4eee2;
+  --accent-soft: #dde6d9;
+  --pos: #2f7a3e;
   --neg: #b42318;
-  --st-estoque: #4a5560;
-  --st-anunciada: #0e7490;
-  --st-reservada: #a35a00;
-  --st-vendida: #12703d;
-  --st-colecao: #6d3fc0;
-  --shadow: 0 1px 2px rgba(18, 26, 46, .06), 0 4px 14px rgba(18, 26, 46, .07);
+  --st-estoque: #5b544c;
+  --st-anunciada: #8a6410;
+  --st-reservada: #b4501c;
+  --st-vendida: #2f7a3e;
+  --st-colecao: #7a3f6d;
+  --shadow: 0 1px 2px rgba(30, 26, 23, .07), 0 4px 14px rgba(30, 26, 23, .07);
   --font-display: 'Big Shoulders Display', 'Arial Narrow', 'Helvetica Neue Condensed', system-ui, sans-serif;
   --font-body: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, system-ui, sans-serif;
   --r: 14px;
@@ -34,17 +34,17 @@
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #0b0f1a; --surface: #141a29; --surface-2: #1d2436; --ink: #e8ecf6; --muted: #97a0b6; --line: #273047;
-    --accent: #8aa4ff; --accent-ink: #0b1433; --accent-soft: #1b2750; --pos: #4cc27f; --neg: #ff7b6e;
-    --st-estoque: #a7b3bd; --st-anunciada: #5cc8dc; --st-reservada: #f0a64a; --st-vendida: #4cc27f; --st-colecao: #b892ff;
+    --bg: #15120f; --surface: #1f1b17; --surface-2: #2a251f; --ink: #f1eadc; --muted: #a89e90; --line: #352f28;
+    --accent: #8fc4a0; --accent-ink: #10251a; --accent-soft: #22362a; --pos: #7fd08f; --neg: #ff8a7a;
+    --st-estoque: #c2b8aa; --st-anunciada: #e0b552; --st-reservada: #ef8a5a; --st-vendida: #7fd08f; --st-colecao: #d39ac6;
     --shadow: 0 1px 2px rgba(0, 0, 0, .3);
     color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
-  --bg: #0b0f1a; --surface: #141a29; --surface-2: #1d2436; --ink: #e8ecf6; --muted: #97a0b6; --line: #273047;
-    --accent: #8aa4ff; --accent-ink: #0b1433; --accent-soft: #1b2750; --pos: #4cc27f; --neg: #ff7b6e;
-    --st-estoque: #a7b3bd; --st-anunciada: #5cc8dc; --st-reservada: #f0a64a; --st-vendida: #4cc27f; --st-colecao: #b892ff;
+  --bg: #15120f; --surface: #1f1b17; --surface-2: #2a251f; --ink: #f1eadc; --muted: #a89e90; --line: #352f28;
+    --accent: #8fc4a0; --accent-ink: #10251a; --accent-soft: #22362a; --pos: #7fd08f; --neg: #ff8a7a;
+    --st-estoque: #c2b8aa; --st-anunciada: #e0b552; --st-reservada: #ef8a5a; --st-vendida: #7fd08f; --st-colecao: #d39ac6;
   --shadow: 0 1px 2px rgba(0, 0, 0, .3);
   color-scheme: dark;
 }
@@ -83,7 +83,7 @@ body[data-tela="login"] #app { padding-bottom: 32px; }
   max-width: 640px; margin: 0 auto; display: flex; align-items: center; gap: 9px;
   padding: calc(var(--safe-t) + 12px) var(--gutter-r) 0 var(--gutter-l);
 }
-.marca-topo img { width: 28px; height: 28px; border-radius: 7px; }
+.marca-topo img { width: 32px; height: 32px; border-radius: 50%; }
 .marca-nome { font-family: var(--font-display); font-weight: 800; font-size: 19px; letter-spacing: .05em; text-transform: uppercase; }
 .tag-demo {
   display: none; margin-left: auto; font-size: 12px; font-weight: 600; color: var(--muted);
@@ -470,8 +470,9 @@ body[data-tela="form"] #tabbar, body[data-tela="detalhe"] #tabbar, body[data-tel
 .passos { margin: 0 0 10px; padding-left: 20px; display: grid; gap: 4px; }
 .rodape-versao { text-align: center; color: var(--muted); font-size: 12px; margin: 8px 0 0; }
 .login { min-height: 80vh; display: grid; align-content: center; justify-items: center; gap: 6px; padding: 24px 0; }
-.login-logo { width: 168px; margin-bottom: 6px; }
-.login-logo svg { display: block; width: 100%; height: auto; }
+.login-logo { width: 200px; height: 200px; border-radius: 50%; margin-bottom: 6px; mix-blend-mode: multiply; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .login-logo { mix-blend-mode: normal; } }
+:root[data-theme="dark"] .login-logo { mix-blend-mode: normal; }
 .login form { width: 100%; max-width: 380px; margin-top: 18px; display: grid; gap: 14px; }
 .login form .campo + .campo { margin-top: 0; }
 .erro-msg { color: var(--neg); font-size: 14px; margin: 0; }

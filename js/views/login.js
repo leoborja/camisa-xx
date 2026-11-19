@@ -1,12 +1,11 @@
 import { esc } from '../ui.js';
-import { marcaCompleta } from '../icones.js';
 
 export const tela = 'login';
 
 export function render(root, { store }) {
   root.innerHTML = `
     <div class="login">
-      <div class="login-logo">${marcaCompleta()}</div>
+      <img class="login-logo" src="icons/logo-560.jpg" alt="Camisa XX · 1983" width="200" height="200">
       <p class="sub">Acervo de camisas</p>
       <form id="f-login" class="cartao" autocomplete="on">
         ${store.soSenha
