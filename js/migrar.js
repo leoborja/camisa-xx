@@ -7,7 +7,9 @@ import { criarStoreCloudflare } from './store/cloudflare.js';
 export const SITE_OFICIAL = location.hostname === 'localhost' ? 'http://localhost:8788' : 'https://camisa-xx.pages.dev';
 const CHAVE = 'cxx:transferencia';
 
-export const ehExemplo = (c) => c.observacoes === 'Exemplo de demonstração';
+// Exemplo = veio do carregamento de exemplos e NUNCA foi editado.
+// Se a pessoa editou um exemplo pra virar camisa dela, ele conta como dela.
+export const ehExemplo = (c) => c.observacoes === 'Exemplo de demonstração' && c.updated_at === c.created_at;
 // Banner só aparece no site de demonstração (não no oficial)
 export const deveOferecer = (store) => store.modo === 'demo' && !location.hostname.endsWith('pages.dev');
 
