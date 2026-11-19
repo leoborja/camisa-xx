@@ -56,3 +56,30 @@ export function arteCamisa(c) {
     <path d="M8 3c.6 1.4 2.1 2.3 4 2.3S15.4 4.4 16 3" fill="none" stroke="${padrao ? det : det}" stroke-width=".9"/>
     ${num}</svg></div>`;
 }
+
+// ---------- Marca Camisa XX (logo 02 "número nas costas", redesenhada em vetor) ----------
+// O XX imita o número termocolado das costas: miolo branco, filete azul e contorno branco.
+export const AZUL_MARCA = '#1d3fa6';
+const X_PATH = 'M0 0H15L21 20L27 0H42L29 34L42 68H27L21 48L15 68H0L13 34Z';
+function numeroXX(x, y, s) {
+  const um = (dx) => `<path d="${X_PATH}" transform="translate(${dx} 0)"/>`;
+  const par = um(0) + um(47);
+  return `<g transform="translate(${x} ${y}) scale(${s})" stroke-linejoin="miter" stroke-miterlimit="3">
+    <g fill="#fff" stroke="#fff" stroke-width="7">${par}</g>
+    <g fill="#fff" stroke="${AZUL_MARCA}" stroke-width="3.2">${par}</g>
+  </g>`;
+}
+// Ícone quadrado (só o XX)
+export function marcaIcone(raio = 22) {
+  return `<svg class="marca-svg" viewBox="0 0 100 100" aria-hidden="true"><rect width="100" height="100" rx="${raio}" fill="${AZUL_MARCA}"/>${numeroXX(11.75, 20.75, 0.86)}</svg>`;
+}
+// Logo completo: CAMISA em arco sobre o XX
+export function marcaCompleta() {
+  return `<svg class="marca-svg" viewBox="0 0 200 190" role="img" aria-label="Camisa XX">
+    <rect width="200" height="190" rx="28" fill="${AZUL_MARCA}"/>
+    <defs><path id="cxx-arco" d="M38 66 Q100 26 162 66"/></defs>
+    <text font-family="'Big Shoulders Display','Arial Narrow',sans-serif" font-weight="800" font-size="27" letter-spacing="2.5" fill="#fff">
+      <textPath href="#cxx-arco" startOffset="50%" text-anchor="middle">CAMISA</textPath></text>
+    ${numeroXX(42.1, 74, 1.3)}
+  </svg>`;
+}

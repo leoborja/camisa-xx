@@ -1,26 +1,27 @@
 /* Camisa XX — acervo de camisas
+   Marca: logo 02 "número nas costas" — azul royal #1d3fa6 + branco.
    Layout: coluna única de até 640px, pensada pro polegar no iPhone; barra de abas
    fixa embaixo, ações principais sempre no rodapé, cartões só onde separam assuntos.
    Tipo: números e títulos em fonte condensada de número de camisa; texto na fonte do sistema (iOS). */
 
 :root {
-  --bg: #eef0eb;          /* gramado lavado, neutro puxado pro verde */
+  --bg: #eef0f6;          /* papel frio puxado pro azul da marca */
   --surface: #ffffff;
-  --surface-2: #e3e7e0;
-  --ink: #142019;
-  --muted: #5f6b63;
-  --line: #d6dcd3;
-  --accent: #0d5c33;      /* verde de bandeira de escanteio */
+  --surface-2: #e2e6ef;
+  --ink: #121a2e;
+  --muted: #5d6579;
+  --line: #d5dae6;
+  --accent: #1d3fa6;      /* azul royal da camisa / logo */
   --accent-ink: #ffffff;
-  --accent-soft: #d5e8dc;
+  --accent-soft: #dde4f7;
   --pos: #12703d;
   --neg: #b42318;
   --st-estoque: #4a5560;
-  --st-anunciada: #1f4fbf;
+  --st-anunciada: #0e7490;
   --st-reservada: #a35a00;
   --st-vendida: #12703d;
   --st-colecao: #6d3fc0;
-  --shadow: 0 1px 2px rgba(20, 32, 25, .06), 0 4px 14px rgba(20, 32, 25, .06);
+  --shadow: 0 1px 2px rgba(18, 26, 46, .06), 0 4px 14px rgba(18, 26, 46, .07);
   --font-display: 'Big Shoulders Display', 'Arial Narrow', 'Helvetica Neue Condensed', system-ui, sans-serif;
   --font-body: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, system-ui, sans-serif;
   --r: 14px;
@@ -33,17 +34,17 @@
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #0d120f; --surface: #161d19; --surface-2: #1f2823; --ink: #e9efe9; --muted: #95a39a; --line: #29332d;
-    --accent: #4cc27f; --accent-ink: #062012; --accent-soft: #173826; --pos: #4cc27f; --neg: #ff7b6e;
-    --st-estoque: #a7b3bd; --st-anunciada: #7ea6ff; --st-reservada: #f0a64a; --st-vendida: #4cc27f; --st-colecao: #b892ff;
+    --bg: #0b0f1a; --surface: #141a29; --surface-2: #1d2436; --ink: #e8ecf6; --muted: #97a0b6; --line: #273047;
+    --accent: #8aa4ff; --accent-ink: #0b1433; --accent-soft: #1b2750; --pos: #4cc27f; --neg: #ff7b6e;
+    --st-estoque: #a7b3bd; --st-anunciada: #5cc8dc; --st-reservada: #f0a64a; --st-vendida: #4cc27f; --st-colecao: #b892ff;
     --shadow: 0 1px 2px rgba(0, 0, 0, .3);
     color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
-  --bg: #0d120f; --surface: #161d19; --surface-2: #1f2823; --ink: #e9efe9; --muted: #95a39a; --line: #29332d;
-  --accent: #4cc27f; --accent-ink: #062012; --accent-soft: #173826; --pos: #4cc27f; --neg: #ff7b6e;
-  --st-estoque: #a7b3bd; --st-anunciada: #7ea6ff; --st-reservada: #f0a64a; --st-vendida: #4cc27f; --st-colecao: #b892ff;
+  --bg: #0b0f1a; --surface: #141a29; --surface-2: #1d2436; --ink: #e8ecf6; --muted: #97a0b6; --line: #273047;
+    --accent: #8aa4ff; --accent-ink: #0b1433; --accent-soft: #1b2750; --pos: #4cc27f; --neg: #ff7b6e;
+    --st-estoque: #a7b3bd; --st-anunciada: #5cc8dc; --st-reservada: #f0a64a; --st-vendida: #4cc27f; --st-colecao: #b892ff;
   --shadow: 0 1px 2px rgba(0, 0, 0, .3);
   color-scheme: dark;
 }
@@ -77,16 +78,20 @@ h1, h2, h3 { text-wrap: balance; margin: 0; }
 body[data-tela="form"] #app, body[data-tela="detalhe"] #app { padding-bottom: calc(88px + var(--safe-b)); }
 body[data-tela="login"] #app { padding-bottom: 32px; }
 
-/* ---------- faixa do modo demonstração ---------- */
-.faixa-demo { display: none; }
-body.modo-demo .faixa-demo {
-  display: block;
-  max-width: 640px; margin: 0 auto;
-  padding: calc(var(--safe-t) + 6px) var(--gutter-r) 0 var(--gutter-l);
-  font-size: 12px; color: var(--muted); letter-spacing: .02em;
+/* ---------- barra da marca ---------- */
+.marca-topo {
+  max-width: 640px; margin: 0 auto; display: flex; align-items: center; gap: 9px;
+  padding: calc(var(--safe-t) + 12px) var(--gutter-r) 0 var(--gutter-l);
 }
-body.modo-demo .faixa-demo + #app { padding-top: 4px; }
-body.modo-demo[data-tela="detalhe"] .faixa-demo { display: none; }
+.marca-topo img { width: 28px; height: 28px; border-radius: 7px; }
+.marca-nome { font-family: var(--font-display); font-weight: 800; font-size: 19px; letter-spacing: .05em; text-transform: uppercase; }
+.tag-demo {
+  display: none; margin-left: auto; font-size: 12px; font-weight: 600; color: var(--muted);
+  border: 1px solid var(--line); border-radius: 999px; padding: 3px 9px;
+}
+body.modo-demo .tag-demo { display: inline-block; }
+body:is([data-tela="detalhe"], [data-tela="form"], [data-tela="login"]) .marca-topo { display: none; }
+body:is([data-tela="lista"], [data-tela="painel"], [data-tela="ajustes"]) #app { padding-top: 0; }
 
 /* ---------- topo ---------- */
 .topo { display: flex; align-items: flex-end; justify-content: space-between; padding: 14px 0 10px; }
@@ -465,8 +470,8 @@ body[data-tela="form"] #tabbar, body[data-tela="detalhe"] #tabbar, body[data-tel
 .passos { margin: 0 0 10px; padding-left: 20px; display: grid; gap: 4px; }
 .rodape-versao { text-align: center; color: var(--muted); font-size: 12px; margin: 8px 0 0; }
 .login { min-height: 80vh; display: grid; align-content: center; justify-items: center; gap: 6px; padding: 24px 0; }
-.login-marca { width: 76px; height: 76px; border-radius: 22px; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center; margin-bottom: 8px; }
-.login-marca svg { width: 42px; height: 42px; }
+.login-logo { width: 168px; margin-bottom: 6px; }
+.login-logo svg { display: block; width: 100%; height: auto; }
 .login form { width: 100%; max-width: 380px; margin-top: 18px; display: grid; gap: 14px; }
 .login form .campo + .campo { margin-top: 0; }
 .erro-msg { color: var(--neg); font-size: 14px; margin: 0; }

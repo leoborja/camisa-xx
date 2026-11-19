@@ -2,6 +2,8 @@
 
 Site mobile-first (feito pro iPhone) pra gerir um acervo de camisas de futebol de colecionador: o que foi comprado, quando, por quanto, fotos, autenticidade, status de venda e lucro.
 
+**Marca:** logo 02 "número nas costas" (azul royal `#1d3fa6` + branco). Vetor em `icons/marca.svg` e em `js/icones.js` (`marcaIcone`, `marcaCompleta`); ícones do iPhone em `icons/`.
+
 **Fase 1 (agora):** gestão do acervo. **Fase 2:** loja pública lendo do mesmo banco. **Fase 3:** marketplace (cada camisa já tem `owner_id`).
 
 ## Como funciona
