@@ -53,7 +53,7 @@ export async function render(root, { store, usuario }) {
         <h3>Conta</h3>
         ${demo
           ? `<p><b>Modo demonstração.</b> As camisas ficam salvas só neste aparelho. Quando o banco de dados estiver conectado, os dados passam a ficar na nuvem e dá pra acessar de qualquer lugar.</p>`
-          : `<p>Conectado como <b>${esc(usuario?.email)}</b></p><button class="btn" id="sair">Sair</button>`}
+          : `<p>${store.modo === 'cloudflare' ? 'As camisas e fotos ficam salvas na nuvem e aparecem em qualquer aparelho em que você entrar com a senha.' : `Conectado como <b>${esc(usuario?.email)}</b>`}</p><button class="btn" id="sair">Sair desta conta</button>`}
       </section>
 
       ${!instalado ? `

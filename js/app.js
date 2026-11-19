@@ -39,7 +39,7 @@ async function navegar() {
   const caminho = location.hash.replace(/^#/, '') || 'acervo';
   if (limpar) { try { limpar(); } catch {} limpar = null; }
 
-  if (store.modo === 'supabase' && !usuario) {
+  if (store.exigeLogin && !usuario) {
     document.body.dataset.tela = 'login';
     return login.render(app, { store });
   }

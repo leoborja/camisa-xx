@@ -30,6 +30,7 @@ export async function criarStoreSupabase({ SUPABASE_URL, SUPABASE_ANON_KEY }) {
 
   return {
     modo: 'supabase',
+    exigeLogin: true,
 
     usuario,
     async entrar(email, senha) { ok(await sb.auth.signInWithPassword({ email, password: senha })); },

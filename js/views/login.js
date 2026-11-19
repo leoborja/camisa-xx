@@ -9,8 +9,10 @@ export function render(root, { store }) {
       <div class="login-logo">${marcaCompleta()}</div>
       <p class="sub">Acervo de camisas</p>
       <form id="f-login" class="cartao" autocomplete="on">
-        <label class="campo"><span>E-mail</span>
-          <input type="email" name="email" required autocomplete="username" inputmode="email" autocapitalize="off"></label>
+        ${store.soSenha
+          ? '<input type="text" name="email" value="camisa-xx" autocomplete="username" hidden>'
+          : `<label class="campo"><span>E-mail</span>
+          <input type="email" name="email" required autocomplete="username" inputmode="email" autocapitalize="off"></label>`}
         <label class="campo"><span>Senha</span>
           <input type="password" name="senha" required autocomplete="current-password"></label>
         <p class="erro-msg" id="erro" hidden></p>
@@ -27,6 +29,7 @@ export function render(root, { store }) {
       await store.entrar(f.email.value.trim(), f.senha.value);
     } catch (e) {
       erro.innerHTML = esc(/invalid/i.test(e.message) ? 'E-mail ou senha incorretos.' : e.message);
+      f.senha.select();
       erro.hidden = false;
       btn.disabled = false; btn.textContent = 'Entrar';
     }

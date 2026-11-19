@@ -10,7 +10,8 @@ Site mobile-first (feito pro iPhone) pra gerir um acervo de camisas de futebol d
 
 - HTML + CSS + JavaScript puro (módulos ES), sem build. Roda em qualquer hospedagem estática (GitHub Pages).
 - **Modo demonstração** (padrão enquanto `js/config.js` estiver vazio): os dados ficam só no aparelho (IndexedDB), sem login, e a primeira visita já abre com 6 camisas de exemplo.
-- **Modo real**: com o Supabase configurado, os dados e as fotos ficam na nuvem e o acesso exige login.
+- **Produção: Cloudflare** — https://camisa-xx.pages.dev. Pages serve o site; `functions/api/[[rota]].js` é a API; dados no **D1** (`camisa-xx`), fotos no **KV** (`camisa-xx-fotos`); login por senha (segredos `APP_SENHA` e `SESSAO_SEGREDO`). Tudo no plano gratuito.
+- O site descobre sozinho onde está: se `/api/saude` responde, usa o Cloudflare; senão, cai no modo demonstração (local, GitHub Pages). O Supabase (`supabase/`, `js/store/supabase.js`) ficou como alternativa, desligado.
 
 ## Telas
 
@@ -24,7 +25,15 @@ Site mobile-first (feito pro iPhone) pra gerir um acervo de camisas de futebol d
 
 As fotos são reduzidas no próprio celular antes de salvar: a versão grande tem 1600px e a miniatura 480px, ambas em JPEG.
 
-## Ativar o banco (Supabase)
+## Publicar no Cloudflare
+
+```bash
+./deploy.sh
+```
+
+Banco: `cloudflare/schema.sql` (já aplicado). Senha e como trocá-la: `ACESSO.local.md` (só local, fora do git). Testar local com banco de mentira: `npx wrangler pages dev dist --port 8788` (senha em `.dev.vars`).
+
+## Alternativa: Supabase (desligado)
 
 1. Crie um projeto em supabase.com (região São Paulo).
 2. No **SQL Editor**, rode o arquivo `supabase/schema.sql` inteiro. Ele cria as tabelas, as regras de segurança (RLS) e o bucket `fotos`.

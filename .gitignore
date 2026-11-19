@@ -1,3 +1,7 @@
 logo/
 .claude/
 .DS_Store
+dist/
+.wrangler/
+ACESSO.local.md
+.dev.vars
