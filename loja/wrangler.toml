@@ -4,8 +4,8 @@ pages_build_output_dir = "public"
 compatibility_date = "2025-10-01"
 
 [vars]
-WHATSAPP = ""      # só números, com DDI: 5531999999999
-INSTAGRAM = ""     # sem @
+WHATSAPP = "5531984149418"   # só números, com DDI
+INSTAGRAM = "camisa_xx"      # sem @
 
 [[d1_databases]]
 binding = "DB"
