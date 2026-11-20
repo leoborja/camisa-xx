@@ -468,6 +468,8 @@ export async function onRequest(ctx) {
     try { return await receberOferta(request, env); } catch (e) { return json({ erro: 'Não deu pra enviar agora. Tente de novo.' }, 500); }
   }
   if (request.method !== 'GET' && request.method !== 'HEAD') return new Response('Método não permitido', { status: 405 });
+  // Endereço antigo da loja (pages.dev) manda pro domínio oficial, pra não duplicar no Google
+  if (url.hostname === 'camisa-xx-loja.pages.dev') return Response.redirect(`https://camisaxx.com.br${p}${url.search}`, 301);
   const origem = url.origin;
   try {
     if (p === '/' || p === '') return html(await inicio(env, origem));
